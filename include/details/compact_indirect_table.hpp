@@ -1,36 +1,41 @@
-
-#include "table_type.hpp"
+#pragma once
+#include "podvector.hpp"
 #include <vector>
 
 namespace cpptables {
+namespace details {
 
-template <typename Ty, typename Accessor = Ty,
-          typename SizeType  = std::uint32_t,
-          typename Allocator = std::allocator<Ty>>
-class table<tags::compact_indirect, Ty, Accessor, SizeType, Allocator> {
-	using vector_t = std::vector<Ty, Allocator>;
+template <typename Ty, typename SizeType, typename Allocator, typename Backref>
+class compact_indirect_table {
+	using vector_t = std::conditional_t<std::is_trivially_copyable_v<Ty>,
+	                                    podvector<Ty, Allocator, SizeType>,
+	                                    std::vector<Ty, Allocator>>;
 
 public:
-	using size_type = SizeType;
-	using this_type =
-	    table<tags::compact_indirect, Ty, Accessor, SizeType, Allocator>;
-	using link      = link<Ty, SizeType>;
-	using constants = details::constants<size_type>;
-	using index_t   = details::index_t<size_type>;
+	using element_type = Ty;
+	using size_type    = SizeType;
+	using this_type    = compact_indirect_table<Ty, Backref, SizeType, Allocator>;
+	using link         = link<Ty, SizeType>;
+	using constants    = details::constants<size_type>;
+	using index_t      = details::index_t<size_type>;
+	using iterator     = typename vector_t::iterator;
+	using const_iterator         = typename vector_t::const_iterator;
+	using reverse_iterator       = typename vector_t::reverse_iterator;
+	using const_reverse_iterator = typename vector_t::const_reverse_iterator;
+
 	/**!
 	 * Make a non-const table view of some type
 	 */
-	template <template <class> ViewType> ViewType<this_type> make_view() {
+	template <template <class> class ViewType> ViewType<this_type> make_view() {
 		return ViewType<this_type>(this);
 	}
 	/**!
 	 * Make a const table view of some type
 	 */
-	template <template <class> ViewType>
+	template <template <class> class ViewType>
 	ViewType<const this_type> make_view() const {
 		return ViewType<const this_type>(this);
 	}
-
 	/**!
 	 * Lambda called for each element, Lambda should accept Ty& parameter
 	 */
@@ -43,6 +48,20 @@ public:
 	template <typename Lambda> void for_each(Lambda&& iLambda) const {
 		this_type::for_each(*this, std::forward<Lambda>(iLambda));
 	}
+	/**!
+	 * Lambda called for each element, Lambda should accept Ty& parameter
+	 */
+	template <typename Lambda>
+	void for_each(size_type iBeg, size_type iEnd, Lambda&& iLambda) {
+		this_type::for_each(*this, iBeg, iEnd, std::forward<Lambda>(iLambda));
+	}
+	/**!
+	 * Lambda called for each element, Lambda should accept Ty& parameter
+	 */
+	template <typename Lambda>
+	void for_each(size_type iBeg, size_type iEnd, Lambda&& iLambda) const {
+		this_type::for_each(*this, iBeg, iEnd, std::forward<Lambda>(iLambda));
+	}
 	/**! Total number of objects stored in the table */
 	size_type size() const noexcept {
 		return static_cast<size_type>(items.size());
@@ -51,17 +70,19 @@ public:
 	size_type capacity() const noexcept {
 		return static_cast<size_type>(indirection.size());
 	}
+	/**! Total number of slots to effieiencyl do parallel iteration */
+	size_type range() const noexcept { return size(); }
 	/**! Insert an object */
 	link insert(const Ty& iObject) noexcept {
 		SizeType location = static_cast<SizeType>(items.size());
 		items.push_back(iObject);
-		return do_insert(iObject);
+		return do_insert(location);
 	}
 	/**! Emplace an object */
 	template <typename... Args> link emplace(Args&&... iArgs) noexcept {
 		SizeType location = static_cast<SizeType>(items.size());
-		items.emplace_back(std::forward<Args>(iArgs), ...);
-		return do_insert(iObject);
+		items.emplace_back(std::forward<Args>(iArgs)...);
+		return do_insert(location);
 	}
 	/**! Erase an object */
 	void erase(link iIndex) {
@@ -78,7 +99,10 @@ public:
 		first_free_index = id;
 	}
 	/**! Erase an object */
-	void erase(const Ty& iObject) { erase(Accessor::get_link(iObject)); }
+	std::enable_if_t<!std::is_same_v<Backref, no_backref>> erase(
+	    const Ty& iObject) {
+		erase(Backref::get_link<Ty, SizeType>(iObject));
+	}
 	/**! Locate an object using its link */
 	inline Ty& at(link iIndex) {
 		SizeType id = iIndex;
@@ -95,33 +119,31 @@ public:
 	}
 
 	// Iterators
-	vector_t::iterator begin() { return items.begin(); }
-	vector_t::iterator end() { return items.end(); }
-	vector_t::const_iterator begin() const { return items.begin(); }
-	vector_t::const_iterator end() const { return items.end(); }
-	vector_t::iterator rbegin() { return items.rbegin(); }
-	vector_t::iterator rend() { return items.rend(); }
-	vector_t::const_iterator rbegin() const { return items.rbegin(); }
-	vector_t::const_iterator rend() const { return items.rend(); }
-
-	template <typename AnyTag> vector_t::iterator begin(AnyTag) {
-		return items.begin();
-	}
-	template <typename AnyTag> vector_t::iterator end(AnyTag) {
-		return items.end();
-	}
-	template <typename AnyTag> vector_t::const_iterator begin(AnyTag) const {
-		return items.begin();
-	}
-	template <typename AnyTag> vector_t::const_iterator end(AnyTag) const {
-		return items.end();
-	}
+	iterator begin() { return items.begin(); }
+	iterator end() { return items.end(); }
+	const_iterator begin() const { return items.begin(); }
+	const_iterator end() const { return items.end(); }
+	reverse_iterator rbegin() { return items.rbegin(); }
+	reverse_iterator rend() { return items.rend(); }
+	const_reverse_iterator rbegin() const { return items.rbegin(); }
+	const_reverse_iterator rend() const { return items.rend(); }
 
 	static void set_link(Ty& ioObj, link iLink) {
-		Accessor::set_link(ioObj, iLink);
+		Backref::set_link<Ty, SizeType>(ioObj, iLink);
 	}
 
-	static link get_link(Ty& ioObj) { return Accessor::get_link(iLink); }
+	static link get_link(Ty& ioObj) {
+		return Backref::get_link<Ty, SizeType>(iLink);
+	}
+
+	void clear() {
+		items.clear();
+		indirection.clear();
+#ifdef CPPTABLES_DEBUG
+		spoilers.clear();
+#endif
+		first_free_index = constants::k_null;
+	}
 
 private:
 	inline link do_insert(SizeType iLoc) {
@@ -133,13 +155,13 @@ private:
 			spoilers.emplace_back(0);
 #endif
 		} else {
-			first_free_index   = indirection[index] & Constants::k_link_mask;
+			first_free_index   = indirection[index] & constants::k_link_mask;
 			indirection[index] = iLoc;
 		}
 #ifdef CPPTABLES_DEBUG
 		index = index_t(index, spoilers[index]).value();
 #endif
-		Accessor::set_link(iObject, index);
+		Backref::set_link<Ty, SizeType>(items[iLoc], index);
 		return index;
 	}
 
@@ -147,6 +169,15 @@ private:
 	inline static void for_each(Type& iCont, Lambda&& iLambda) {
 		SizeType begin = 0;
 		SizeType end   = static_cast<SizeType>(iCont.items.size());
+		while (begin < end) {
+			std::forward<Lambda>(iLambda)(iCont.items[begin++]);
+		}
+	}
+	template <typename Lambda, typename Type>
+	inline static void for_each(Type& iCont, SizeType iBegin, SizeType iEnd,
+	                            Lambda&& iLambda) {
+		SizeType begin = iBegin;
+		SizeType end   = iEnd;
 		while (begin < end) {
 			std::forward<Lambda>(iLambda)(iCont.items[begin++]);
 		}
@@ -159,4 +190,5 @@ private:
 #endif
 	size_type first_free_index = constants::k_null;
 };
+} // namespace details
 } // namespace cpptables
