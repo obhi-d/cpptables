@@ -125,7 +125,7 @@ template <typename Cont> void validate() {
 			std::string name =
 			    std::to_string(range_rand<std::uint32_t>(0, count)) + ".o";
 			auto it = check.second.find(name);
-			if (it != check.second.end() && range_rand<std::uint32_t>(0, 10) > 5) {
+			if (it != check.second.end() && range_rand<std::uint32_t>(0, 100) > 50) {
 				cont.erase(it->second);
 				check.first.erase(it->second);
 				check.second.erase(it);
@@ -141,7 +141,7 @@ template <typename Cont> void validate() {
 		              range_rand<std::uint32_t>(count >> 2, count), [&](auto item) {
 			              auto it = check.second.find(item->name);
 			              assert(it != check.second.end());
-			              if (range_rand<std::uint32_t>(0, 10) > 5) {
+			              if (range_rand<std::uint32_t>(0, 100) > 50) {
 				              erase_list.push_back((*it).second);
 				              check.first.erase((*it).second);
 				              check.second.erase(it);
@@ -159,6 +159,7 @@ template <typename Cont> void validate() {
 
 int main() {
 
+	try {
 	// msvc bug
 #ifndef _MSC_VER
 	validate<cpptables::tbl_sparse_br<CObject, &CObject::index>>();
@@ -173,5 +174,10 @@ int main() {
 	validate<cpptables::tbl_sparse_no_iter_br<SObject, &SObject::index>>();
 	validate<cpptables::tbl_sparse_ptr<CObject>>();
 	validate<cpptables::tbl_sparse_ptr_br<CObject, &CObject::index>>();
+	} catch(std::exception ex) {
+		std::cerr << "Failed with " << ex.what() << std::endl;
+		return 0;
+	}
+	std::cout << "Passing" << std::endl;
 	return 0;
 }
