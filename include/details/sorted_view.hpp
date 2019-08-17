@@ -50,7 +50,7 @@ public:
 	}
 
 protected:
-	static podvector<size_type>::iterator insert_sorted(
+	static typename podvector<size_type>::iterator insert_sorted(
 	    podvector<size_type>& iVec, size_type iItem) {
 		return iVec.insert(std::upper_bound(iVec.begin(), iVec.end(), iItem),
 		                   iItem);

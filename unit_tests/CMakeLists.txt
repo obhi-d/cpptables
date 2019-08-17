@@ -1,10 +1,11 @@
 
-project(cpptables_general_tests)
+project(cpptables_tests)
 
 ## Basic tests
-add_executable(test_cpptables_general general_test.cpp)
-add_test(cpptables_general test_cpptables_general)
+add_executable(cpptables_tests_validation general_test.cpp)
+add_test(validation cpptables_tests_validation)
+target_compile_features(cpptables_tests_validation PUBLIC cxx_std_17)
 
-target_link_libraries(test_cpptables_general cpptables)
+target_link_libraries(cpptables_tests_validation cpptables)
 
 

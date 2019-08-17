@@ -1,4 +1,5 @@
 #pragma once
+#include "basic_types.hpp"
 #include "podvector.hpp"
 #include <vector>
 
@@ -14,7 +15,7 @@ class compact_indirect_table {
 public:
 	using element_type = Ty;
 	using size_type    = SizeType;
-	using this_type    = compact_indirect_table<Ty, Backref, SizeType, Allocator>;
+	using this_type    = compact_indirect_table<Ty, SizeType, Allocator, Backref>;
 	using link         = link<Ty, SizeType>;
 	using constants    = details::constants<size_type>;
 	using index_t      = details::index_t<size_type>;
@@ -98,9 +99,11 @@ public:
 		indirection[id]  = first_free_index | constants::k_invalid_bit;
 		first_free_index = id;
 	}
+
 	/**! Erase an object */
-	std::enable_if_t<!std::is_same_v<Backref, no_backref>> erase(
+	/*std::enable_if_t<has_backref_v<Backref>>void*/ void erase(
 	    const Ty& iObject) {
+		assert(has_backref_v<Backref> && "Not supported without backreference");
 		erase(Backref::get_link<Ty, SizeType>(iObject));
 	}
 	/**! Locate an object using its link */

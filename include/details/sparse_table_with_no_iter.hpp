@@ -9,12 +9,12 @@ template <typename Ty, typename SizeType = std::uint32_t,
           typename Allocator = std::allocator<Ty>,
           typename Backref   = std::false_type,
           typename Storage   = std::false_type>
-class sparse_table_with_no_iter {
+class sparse_table_with_no_iter : Allocator {
 
 	union alignas(alignof(Ty)) data_block {
 		Ty object;
 		SizeType integer;
-		std::uint8_t storage[size_of(Ty)];
+		std::uint8_t storage[sizeof(Ty)];
 
 		inline SizeType get_integer() const noexcept { return integer; }
 		inline void set_integer(SizeType iData) noexcept { integer = iData; }
@@ -127,9 +127,9 @@ public:
 		return index;
 	}
 
-	inline std::enable_if_t<!std::is_same_v<Backref, no_backref> &&
-	                        !std::is_same_v<Backref, std::false_type>>
-	erase(const Ty& iObject) {
+	inline /*std::enable_if_t<has_backref_v<Backref>>*/ void erase(
+	    const Ty& iObject) {
+		assert(has_backref_v<Backref> && "Not supported without backreference");
 		erase(get_link(iObject));
 	}
 
@@ -168,14 +168,12 @@ public:
 	}
 
 	static void set_link(Ty& ioObj, size_type iLink) {
-		if constexpr (!std::is_same_v<Backref, no_backref> &&
-		              !std::is_same_v<Backref, std::false_type>) {
+		if constexpr (has_backref_v<Backref>) {
 			Backref::set_link(ioObj, iLink);
 		}
 	}
 	static size_type get_link(const Ty& ioObj) {
-		if constexpr (!std::is_same_v<Backref, no_backref> &&
-		              !std::is_same_v<Backref, std::false_type>) {
+		if constexpr (has_backref_v<Backref>) {
 			return Backref::get_link(ioObj);
 		}
 		return size_type();
@@ -207,7 +205,7 @@ private:
 	template <typename Lambda, typename Type>
 	inline static void for_each(Type& iCont, Lambda&& iLambda) {
 		size_type begin = 0;
-		size_type end   = size_;
+		size_type end   = iCont.size_;
 		if (begin < iCont.usage_.size()) {
 			for (; begin < end; ++begin) {
 				if (!iCont.is_valid(begin))
@@ -238,7 +236,9 @@ private:
 	inline dbpointer allocate(size_type n) {
 		return reinterpret_cast<dppointer>(Allocator::allocate(n));
 	}
-	inline void deallocate() { Allocator::deallocate(items_, capacity); }
+	inline void deallocate() {
+		Allocator::deallocate(reinterpret_cast<Ty*>(items_), capacity_);
+	}
 
 	inline void destroy_and_deallocate() {
 
@@ -258,7 +258,7 @@ private:
 	inline void unchecked_reserve(size_type n) {
 		dppointer d = allocate(n);
 		if (std::is_trivially_copyable_v<Ty>)
-			std::memcpy(d, items_, size_ * size_of(Ty));
+			std::memcpy(d, items_, size_ * sizeof(Ty));
 		else {
 			size_type mcopy = std::min<size_type>(size_, n);
 			for (size_type i = 0; i < mcopy; ++i) {
@@ -277,8 +277,7 @@ private:
 		capacity_ = n;
 	}
 
-	data_block* items_ = nullptr;
-	usage__map usage_;
+	data_block* items_          = nullptr;
 	size_type size_             = 0;
 	size_type capacity_         = 0;
 	size_type valid_count_      = 0;

@@ -9,12 +9,12 @@ template <typename Ty, typename SizeType = std::uint32_t,
           typename Allocator = std::allocator<Ty>,
           typename Backref   = std::false_type,
           typename Storage   = std::false_type>
-class sparse_table_with_validmap {
+class sparse_table_with_validmap : Allocator {
 
 	union alignas(alignof(Ty)) data_block {
 		Ty object;
 		SizeType integer;
-		std::uint8_t storage[size_of(Ty)];
+		std::uint8_t storage[sizeof(Ty)];
 
 		inline SizeType get_integer() const noexcept { return integer; }
 		inline void set_integer(SizeType iData) noexcept { integer = iData; }
@@ -50,10 +50,17 @@ public:
 	using size_type    = SizeType;
 	using this_type =
 	    sparse_table_with_validmap<Ty, SizeType, Allocator, Backref, Storage>;
-	using link      = link<Ty, size_type>;
-	using constants = details::constants<SizeType>;
-	using index_t   = details::index_t<SizeType>;
-	using usage_map = std::vector<std::uint32_t>;
+	using link            = link<Ty, size_type>;
+	using constants       = details::constants<SizeType>;
+	using index_t         = details::index_t<SizeType>;
+	using usage_map       = std::vector<std::uint32_t>;
+	using value_type      = Ty;
+	using allocator_type  = Allocator;
+	using difference_type = std::ptrdiff_t;
+	using reference       = value_type&;
+	using const_reference = const value_type&;
+	using pointer         = Ty*;
+	using const_pointer   = const Ty*;
 
 	static_assert(sizeof(size_type) <= sizeof(Ty),
 	              "size_ of object should be greater than or equal to 4 bytes");
@@ -162,13 +169,6 @@ public:
 	using const_iterator         = iterator_wrapper<const this_type>;
 	using reverse_iterator       = std::reverse_iterator<iterator>;
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-	using value_type             = Ty;
-	using allocator_type         = Allocator;
-	using difference_type        = std::ptrdiff_t;
-	using reference              = value_type&;
-	using const_reference        = const value_type&;
-	using pointer                = Ty*;
-	using const_pointer          = const Ty*;
 
 	~sparse_table_with_validmap() { destroy_and_deallocate(); }
 	/**!
@@ -212,7 +212,7 @@ public:
 		this_type::for_each(*this, iBeg, iEnd, std::forward<Lambda>(iLambda));
 	}
 
-	template <constexpr bool iValue> constexpr bool set_usage(size_type it) {
+	template <bool iValue> constexpr void set_usage(size_type it) {
 		size_type id = it >> 5;
 		if (id >= usage_.size()) {
 			if constexpr (iValue)
@@ -356,19 +356,19 @@ private:
 	void push_back(const Ty& x) {
 		if (capacity_ < size_ + 1)
 			unchecked_reserve(size_ + std::max<size_type>(size_ >> 1, 1));
-		data_[size_++].construct(x);
+		items_[size_++].construct(x);
 	}
 
 	template <class... Args> void emplace_back(Args&&... args) {
 		if (capacity_ < size_ + 1)
 			unchecked_reserve(size_ + std::max<size_type>(size_ >> 1, 1));
-		data_[size_++].construct(std::forward<Args>(args)...);
+		items_[size_++].construct(std::forward<Args>(args)...);
 	}
 
 	template <typename Lambda, typename Type>
 	inline static void for_each(Type& iCont, Lambda&& iLambda) {
 		size_type begin = 0;
-		size_type end   = size_;
+		size_type end   = iCont.size_;
 		if (begin < iCont.usage_.size()) {
 			for (; begin < end; ++begin) {
 				if (!iCont.is_valid(begin))
@@ -397,9 +397,11 @@ private:
 		}
 	}
 	inline dbpointer allocate(size_type n) {
-		return reinterpret_cast<dppointer>(Allocator::allocate(n));
+		return reinterpret_cast<dbpointer>(Allocator::allocate(n));
 	}
-	inline void deallocate() { Allocator::deallocate(items_, capacity); }
+	inline void deallocate() {
+		Allocator::deallocate(reinterpret_cast<Ty*>(items_), capacity_);
+	}
 
 	inline void destroy_and_deallocate() {
 
@@ -417,9 +419,9 @@ private:
 	}
 
 	inline void unchecked_reserve(size_type n) {
-		dppointer d = allocate(n);
+		dbpointer d = allocate(n);
 		if (std::is_trivially_copyable_v<Ty>)
-			std::memcpy(d, items_, size_ * size_of(Ty));
+			std::memcpy(d, items_, size_ * sizeof(Ty));
 		else {
 			size_type mcopy = std::min<size_type>(size_, n);
 			for (size_type i = 0; i < mcopy; ++i) {

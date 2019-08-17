@@ -237,9 +237,10 @@ public:
 		return index;
 	}
 
-	inline std::enable_if_t<!std::is_same_v<Backref, no_backref> &&
-	                        !std::is_same_v<Backref, std::false_type>>
-	erase(const Ty& iObject) {
+	inline /*std::enable_if_t<has_backref_v<Backref>>*/ void erase(
+	    const Ty& iObject) {
+		assert(has_backref_v<Backref> && "Not supported without backreference");
+
 		erase(get_link(iObject));
 	}
 

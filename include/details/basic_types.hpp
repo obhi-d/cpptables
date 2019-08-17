@@ -1,5 +1,6 @@
 #pragma once
 #include "constants.hpp"
+#include <type_traits>
 
 namespace cpptables {
 
@@ -13,6 +14,24 @@ template <typename Ty, typename SizeType> struct link {
 	inline operator SizeType() { return offset; }
 	inline operator bool() { return offset != k_null; }
 
+	friend bool operator==(link iFirst, link iSecond) {
+		return iFirst.offset == iSecond.offset;
+	}
+	friend bool operator!=(link iFirst, link iSecond) {
+		return iFirst.offset != iSecond.offset;
+	}
+	friend bool operator<(link iFirst, link iSecond) {
+		return iFirst.offset < iSecond.offset;
+	}
+	friend bool operator>(link iFirst, link iSecond) {
+		return iFirst.offset > iSecond.offset;
+	}
+	friend bool operator<=(link iFirst, link iSecond) {
+		return iFirst.offset <= iSecond.offset;
+	}
+	friend bool operator>=(link iFirst, link iSecond) {
+		return iFirst.offset >= iSecond.offset;
+	}
 	SizeType offset = k_null;
 };
 
@@ -39,13 +58,17 @@ struct sortedfree {
 	enum { value = 64 };
 };
 
-template <typename... Options> struct options {
-	enum { value = (Options::value | ...) };
-};
 } // namespace tags
 
+namespace details {
+
+template <typename... Options> constexpr unsigned options() {
+	return (Options::value | ...);
+};
+
+} // namespace details
 template <typename... Tags>
-inline constexpr std::uint32_t tags_v = tags::options<Tags...>::value;
+inline constexpr unsigned tags_v = details::options<Tags...>();
 
 struct no_backref : std::false_type {
 	template <typename Ty, typename SizeType>
@@ -61,33 +84,40 @@ template <auto Member> struct with_backref : std::true_type {
 		*reinterpret_cast<SizeType*>(&(oObject.*Member)) = iIdx;
 	}
 	template <typename Ty, typename SizeType>
-	inline static SizeType get_link(Ty& iObject) {
-		return *reinterpret_cast<const SizeType*>(&(oObject.*Member));
+	inline static SizeType get_link(const Ty& iObject) {
+		return *reinterpret_cast<const SizeType*>(&(iObject.*Member));
 	}
 };
 
 namespace details {
+
+template <typename U, typename V>
+constexpr bool is_not_same_v = !std::is_same_v<U, V>;
+
+template <typename T>
+constexpr bool has_backref_v =
+    !std::is_same_v<no_backref, T> && !std::is_same_v<std::false_type, T>;
+
 template <typename SizeType> struct index_t {
 	using constants = details::constants<SizeType>;
 	index_t()       = default;
-	index_t(SizeType iID) : value(iID) {}
+	index_t(SizeType iID) : val_(iID) {}
 #ifdef L_DEBUG
 	index_t(SizeType iIndex, std::uint8_t iSpoiler)
-	    : index_val(iIndex | (static_cast<SizeType>(iSpoiler)
-	                          << constants::k_spoiler_shift)) {}
+	    : val_(iIndex |
+	           (static_cast<SizeType>(iSpoiler) << constants::k_spoiler_shift)) {}
 	std::uint8_t spoiler() const {
-		return static_cast<std::uint8_t>(index_val >> constants::k_spoiler_shift) &
-		       0x7f;
+		return static_cast<std::uint8_t>(val_ >> constants::k_spoiler_shift) & 0x7f;
 	}
-	SizeType index() const { return index_val & constants::k_index_mask; }
-	SizeType value() const { return index_val; }
+	SizeType index() const { return val_ & constants::k_index_mask; }
+	SizeType value() const { return val_; }
 #else
-	index_t(SizeType iIndex, std::uint8_t iSpoiler) : index_val(iIndex) {}
+	index_t(SizeType iIndex, std::uint8_t iSpoiler) : val_(iIndex) {}
 	constexpr std::uint8_t spoiler() const { return 0; }
-	SizeType index() const { return index_val; }
-	SizeType value() const { return index_val; }
+	SizeType index() const { return val_; }
+	SizeType value() const { return val_; }
 #endif
-	SizeType index_val;
+	SizeType val_;
 };
 
 } // namespace details
