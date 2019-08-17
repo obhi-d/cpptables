@@ -21,13 +21,13 @@ public:
 	    : container(iOther.container), items(iOther.items) {}
 
 	inline basic_view& operator=(basic_view&& iOther) {
-		container = iTy.container;
+		container = iOther.container;
 		items     = std::move(iOther.items);
 		return *this;
 	}
 
 	inline basic_view& operator=(const basic_view& iOther) {
-		container = iTy.container;
+		container = iOther.container;
 		items     = iOther.items;
 		return *this;
 	}
@@ -39,7 +39,7 @@ public:
 		}
 	}
 	template <typename Lambda>
-	inline void for_each(size_type iFirst, size_type iLirst,
+	inline void for_each(size_type iFirst, size_type iLast,
 	                     Lambda&& iLambda) const {
 		for (; iFirst < iLast; ++iFirst) {
 			std::forward<Lambda>(iLambda)(container.get()[items[iFirst]]);
@@ -59,10 +59,10 @@ public:
 		items.push_back(container.get().get_link(iComp));
 	}
 	inline void push_back(link iCompIndex) { items.push_back(iCompIndex); }
-	inline bool erase(const value_type& iComp) {
-		return erase(container.get().get_link(iComp));
+	inline void erase(const value_type& iComp) {
+		erase(container.get().get_link(iComp));
 	}
-	inline bool erase(link iCompIndex) {
+	inline void erase(link iCompIndex) {
 		items[find(iCompIndex)] = items.back();
 		items.pop_back();
 	}

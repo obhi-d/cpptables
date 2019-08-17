@@ -33,7 +33,7 @@ class sparse_table_with_sortedfree : Allocator {
 		data_block(Ty&& iObject) noexcept : object(std::move(iObject)) {}
 		template <typename... Args>
 		data_block(Args&&... iArgs) noexcept
-		    : object(std::forward<Args>(args)...) {}
+		    : object(std::forward<Args>(iArgs)...) {}
 
 		~data_block() noexcept {}
 
@@ -51,11 +51,10 @@ public:
 	using size_type  = SizeType;
 	using this_type =
 	    sparse_table_with_sortedfree<Ty, SizeType, Allocator, Backref, Storage>;
-	using link            = link<Ty, SizeType>;
+	using link            = cpptables::link<Ty, SizeType>;
 	using constants       = details::constants<SizeType>;
 	using index_t         = details::index_t<SizeType>;
 	using difference_type = std::make_signed_t<size_type>;
-	using value_type      = Ty;
 	using allocator_type  = Allocator;
 	using reference       = value_type&;
 	using const_reference = const value_type&;

@@ -11,13 +11,13 @@ template <typename Ty, typename Backref, typename SizeType> struct spt_backref {
 	using plink = cpptables::link<Ty*, SizeType>;
 	using link  = cpptables::link<Ty, SizeType>;
 
-	template <typename T, typename SizeType>
-	static void set_link(T iObj, SizeType iLink) {
-		Backref::set_link(*iObj, link(iLink));
+	template <typename T, typename SizeTy>
+	static void set_link(T iObj, SizeTy iLink) {
+		Backref::template set_link<std::remove_pointer_t<T>, SizeTy>(*iObj, link(iLink));
 	}
 
-	template <typename T, typename SizeType> static SizeType get_link(T iObj) {
-		return Backref::get_link(*iObj);
+	template <typename T, typename SizeTy> static SizeTy get_link(T iObj) {
+		return Backref::template get_link<std::remove_pointer_t<T>, SizeTy>(*iObj);
 	}
 };
 
@@ -66,12 +66,16 @@ class sparse_table_of_pointers
           Ty*, SizeType, Allocator, details::spt_backref<Ty, Backref, SizeType>,
           details::spt_storage<Ty, SizeType>> {
 public:
+	using base_type = details::sparse_table_with_backref<
+          Ty*, SizeType, Allocator, details::spt_backref<Ty, Backref, SizeType>,
+          details::spt_storage<Ty, SizeType>>;
 	using ulink = cpptables::link<Ty, SizeType>;
-	inline void erase(ulink iIndex) { this_type::erase(link(iIndex)); }
+	using link = typename base_type::link;
+	inline void erase(ulink iIndex) { this->base_type::erase(link(iIndex)); }
 	inline const Ty& at(ulink iIndex) const {
-		return *this_type::at(link(iIndex));
+		return *this->base_type::at(link(iIndex));
 	}
-	inline Ty& at(ulink iIndex) { return *this_type::at(link(iIndex)); }
+	inline Ty& at(ulink iIndex) { return *this->base_type::at(link(iIndex)); }
 };
 } // namespace details
 } // namespace cpptables

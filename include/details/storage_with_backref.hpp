@@ -14,16 +14,16 @@ struct alignas(alignof(Ty)) storage_with_backref {
 		std::uint8_t storage[sizeof(Ty)];
 
 		inline bool is_null() const noexcept {
-			return (static_cast<SizeType>(Backref::get_link<Ty, SizeType>(object)) &
+			return (static_cast<SizeType>(Backref::template get_link<Ty, SizeType>(object)) &
 			        constants::k_invalid_bit) != 0;
 		}
 
 		inline SizeType get_data() const noexcept {
-			return static_cast<SizeType>(Backref::get_link<Ty, SizeType>(object));
+			return static_cast<SizeType>(Backref::template get_link<Ty, SizeType>(object));
 		}
 
 		inline void set_data(SizeType iData) noexcept {
-			return Backref::set_link<Ty, SizeType>(object, iData);
+			return Backref::template set_link<Ty, SizeType>(object, iData);
 		}
 
 		data_block() noexcept {}
@@ -76,7 +76,7 @@ struct alignas(alignof(Ty)) storage_with_backref {
 		data_block(Ty&& iObject) noexcept : object(std::move(iObject)) {}
 		template <typename... Args>
 		data_block(Args&&... iArgs) noexcept
-		    : object(std::forward<Args>(args)...) {}
+		    : object(std::forward<Args>(iArgs)...) {}
 		~data_block() noexcept {}
 	};
 

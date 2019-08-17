@@ -17,7 +17,7 @@ public:
 	using size_type  = SizeType;
 	using this_type =
 	    packed_table_with_indirection<Ty, SizeType, Allocator, Backref>;
-	using link                   = link<Ty, SizeType>;
+	using link                   = cpptables::link<Ty, SizeType>;
 	using constants              = details::constants<size_type>;
 	using index_t                = details::index_t<size_type>;
 	using iterator               = typename vector_t::iterator;
@@ -106,7 +106,7 @@ public:
 	/*std::enable_if_t<has_backref_v<Backref>>void*/ void erase(
 	    const Ty& iObject) {
 		assert(has_backref_v<Backref> && "Not supported without backreference");
-		erase(Backref::get_link<Ty, SizeType>(iObject));
+		erase(Backref::template get_link<value_type, size_type>(iObject));
 	}
 	/**! Locate an object using its link */
 	inline Ty& at(link iIndex) {
@@ -134,11 +134,11 @@ public:
 	const_reverse_iterator rend() const { return items.rend(); }
 
 	static void set_link(Ty& ioObj, link iLink) {
-		Backref::set_link<Ty, SizeType>(ioObj, iLink);
+		Backref::template set_link<Ty, SizeType>(ioObj, iLink);
 	}
 
 	static link get_link(Ty& ioObj) {
-		return Backref::get_link<Ty, SizeType>(iLink);
+		return Backref::template get_link<Ty, SizeType>(ioObj);
 	}
 
 	void clear() {
@@ -166,7 +166,7 @@ private:
 #ifdef CPPTABLES_DEBUG
 		index = index_t(index, spoilers[index]).value();
 #endif
-		Backref::set_link<Ty, SizeType>(items[iLoc], index);
+		Backref::template set_link<Ty, SizeType>(items[iLoc], index);
 		return index;
 	}
 

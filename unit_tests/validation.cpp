@@ -91,7 +91,6 @@ template <typename Cont> struct helper {
 		}
 	}
 
-	template <typename Cont>
 	static void emplace(set_t& oSet, std::uint32_t iOffset, Cont& iCont,
 	                    std::uint32_t iCount) {
 		for (std::uint32_t i = 0; i < iCount; ++i) {
@@ -161,7 +160,9 @@ template <typename Cont> void validate() {
 int main() {
 
 	// msvc bug
-	// validate<cpptables::tbl_sparse_br<CObject, &CObject::index>>();
+#ifndef _MSC_VER
+	validate<cpptables::tbl_sparse_br<CObject, &CObject::index>>();
+#endif
 	validate<cpptables::tbl_packed<CObject>>();
 	validate<cpptables::tbl_packed_br<CObject, &CObject::index>>();
 	validate<cpptables::tbl_sparse_sfree_br<CObject, &CObject::index>>();

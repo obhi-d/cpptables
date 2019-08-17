@@ -32,7 +32,7 @@ class sparse_table_with_validmap : Allocator {
 		data_block(Ty&& iObject) noexcept : object(std::move(iObject)) {}
 		template <typename... Args>
 		data_block(Args&&... iArgs) noexcept
-		    : object(std::forward<Args>(args)...) {}
+		    : object(std::forward<Args>(iArgs)...) {}
 
 		~data_block() noexcept {}
 
@@ -50,11 +50,10 @@ public:
 	using size_type  = SizeType;
 	using this_type =
 	    sparse_table_with_validmap<Ty, SizeType, Allocator, Backref, Storage>;
-	using link            = link<Ty, size_type>;
+	using link            = cpptables::link<Ty, size_type>;
 	using constants       = details::constants<SizeType>;
 	using index_t         = details::index_t<SizeType>;
 	using usage_map       = std::vector<std::uint32_t>;
-	using value_type      = Ty;
 	using allocator_type  = Allocator;
 	using difference_type = std::ptrdiff_t;
 	using reference       = value_type&;

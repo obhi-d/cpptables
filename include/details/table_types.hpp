@@ -103,7 +103,7 @@ class table<tv_sparse_no_iter_br, Ty, BackrefMember, SizeType, Allocator>
     : public details::sparse_table_with_no_iter<Ty, SizeType, Allocator,
                                                 with_backref<BackrefMember>> {
 public:
-	enum : unsigned { tags = tv_sparse_no_iter };
+	enum : unsigned { tags = tv_sparse_no_iter_br };
 };
 
 template <typename Ty, auto BackrefMember,

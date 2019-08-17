@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <memory>
 #include <type_traits>
+#include <cstring>
 // refer to:
 // https://en.cppreference.com/w/cpp/header/vector
 namespace cpptables {
@@ -279,7 +280,7 @@ public:
 	}
 	iterator erase(const_iterator first, const_iterator last) {
 		L_ASSERT(last < end());
-		uint32 n = static_cast<uint32>(std::distance(first, last));
+		std::uint32_t n = static_cast<std::uint32_t>(std::distance(first, last));
 		std::memmove(const_cast<iterator>(first), last,
 		             reinterpret_cast<size_t>((data_ + size_) - (last)) *
 		                 sizeof(Ty));

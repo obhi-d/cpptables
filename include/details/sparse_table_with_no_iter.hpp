@@ -35,7 +35,7 @@ class sparse_table_with_no_iter : Allocator {
 		data_block(Ty&& iObject) noexcept : object(std::move(iObject)) {}
 		template <typename... Args>
 		data_block(Args&&... iArgs) noexcept
-		    : object(std::forward<Args>(args)...) {}
+		    : object(std::forward<Args>(iArgs)...) {}
 
 		~data_block() noexcept {}
 
@@ -53,10 +53,9 @@ public:
 	using size_type  = SizeType;
 	using this_type =
 	    sparse_table_with_no_iter<Ty, SizeType, Allocator, Backref, Storage>;
-	using link            = link<Ty, SizeType>;
+	using link            = cpptables::link<Ty, SizeType>;
 	using constants       = details::constants<SizeType>;
 	using index_t         = details::index_t<SizeType>;
-	using value_type      = Ty;
 	using allocator_type  = Allocator;
 	using difference_type = std::ptrdiff_t;
 	using reference       = value_type&;
@@ -173,18 +172,17 @@ public:
 
 	static void set_link(Ty& ioObj, size_type iLink) {
 		if constexpr (has_backref_v<Backref>) {
-			Backref::set_link(ioObj, iLink);
+			Backref::template set_link(ioObj, iLink);
 		}
 	}
 	static size_type get_link(const Ty& ioObj) {
 		if constexpr (has_backref_v<Backref>) {
-			return Backref::get_link(ioObj);
+			return Backref::template get_link(ioObj);
 		}
 		return size_type();
 	}
 
 	void clear() {
-		usage_.clear();
 		size_        = 0;
 		valid_count_ = 0;
 #ifdef CPPTABLES_DEBUG

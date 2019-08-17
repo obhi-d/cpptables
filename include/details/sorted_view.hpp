@@ -6,6 +6,7 @@
 namespace cpptables {
 template <typename Container> class sorted_view : public basic_view<Container> {
 public:
+	using base_type    = basic_view<Container>;
 	using super        = basic_view<Container>;
 	using size_type    = typename Container::size_type;
 	using link         = typename Container::link;
@@ -28,21 +29,21 @@ public:
 		return *this;
 	}
 	inline void insert(link iCompIndex) {
-		insert_sorted(items, (size_type)iCompIndex);
+		insert_sorted(base_type::items, (size_type)iCompIndex);
 	}
 	inline bool erase(link iCompIndex) {
-		auto first = std::begin(items);
-		auto last  = std::end(items);
+		auto first = std::begin(base_type::items);
+		auto last  = std::end(base_type::items);
 		auto it    = std::lower_bound(first, last, (size_type)iCompIndex);
 		if (it != last) {
-			items.erase(it);
+			base_type::items.erase(it);
 			return true;
 		}
 		return false;
 	}
 	inline size_type find(link iCompIndex) const {
-		auto first = std::begin(items);
-		auto last  = std::end(items);
+		auto first = std::begin(base_type::items);
+		auto last  = std::end(base_type::items);
 		auto it    = std::lower_bound(first, last, (size_type)iCompIndex);
 		if (it != last)
 			return static_cast<size_type>(std::distance(first, it));

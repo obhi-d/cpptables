@@ -14,7 +14,7 @@ public:
 	using size_type  = SizeType;
 	using this_type =
 	    sparse_table_with_backref<Ty, SizeType, Allocator, Backref, Storage>;
-	using link      = link<Ty, SizeType>;
+	using link      = cpptables::link<Ty, SizeType>;
 	using constants = details::constants<size_type>;
 	using index_t   = details::index_t<size_type>;
 
@@ -295,11 +295,11 @@ public:
 	}
 
 	static void set_link(Ty& ioObj, SizeType iLink) {
-		Backref::set_link<Ty, SizeType>(ioObj, iLink);
+		Backref::template set_link<Ty, SizeType>(ioObj, iLink);
 	}
 
 	static SizeType get_link(const Ty& ioObj) {
-		return Backref::get_link<Ty, SizeType>(ioObj);
+		return Backref::template get_link<Ty, SizeType>(ioObj);
 	}
 
 	void clear() {
