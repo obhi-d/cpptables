@@ -36,7 +36,7 @@ template <typename Ty, typename SizeType> struct link {
 };
 
 namespace tags {
-struct compact {
+struct packed {
 	enum { value = 1 };
 };
 struct backref {

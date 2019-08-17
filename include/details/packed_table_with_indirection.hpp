@@ -7,19 +7,20 @@ namespace cpptables {
 namespace details {
 
 template <typename Ty, typename SizeType, typename Allocator, typename Backref>
-class compact_indirect_table {
+class packed_table_with_indirection {
 	using vector_t = std::conditional_t<std::is_trivially_copyable_v<Ty>,
 	                                    podvector<Ty, Allocator, SizeType>,
 	                                    std::vector<Ty, Allocator>>;
 
 public:
-	using element_type = Ty;
-	using size_type    = SizeType;
-	using this_type    = compact_indirect_table<Ty, SizeType, Allocator, Backref>;
-	using link         = link<Ty, SizeType>;
-	using constants    = details::constants<size_type>;
-	using index_t      = details::index_t<size_type>;
-	using iterator     = typename vector_t::iterator;
+	using value_type = Ty;
+	using size_type  = SizeType;
+	using this_type =
+	    packed_table_with_indirection<Ty, SizeType, Allocator, Backref>;
+	using link                   = link<Ty, SizeType>;
+	using constants              = details::constants<size_type>;
+	using index_t                = details::index_t<size_type>;
+	using iterator               = typename vector_t::iterator;
 	using const_iterator         = typename vector_t::const_iterator;
 	using reverse_iterator       = typename vector_t::reverse_iterator;
 	using const_reverse_iterator = typename vector_t::const_reverse_iterator;
@@ -96,8 +97,9 @@ public:
 #endif
 		items[indirection[id]] = std::move(items.back());
 		items.pop_back();
-		indirection[id]  = first_free_index | constants::k_invalid_bit;
-		first_free_index = id;
+		indirection[items.size()] = indirection[id];
+		indirection[id]           = first_free_index | constants::k_invalid_bit;
+		first_free_index          = id;
 	}
 
 	/**! Erase an object */

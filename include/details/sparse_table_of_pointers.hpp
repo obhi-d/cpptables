@@ -52,7 +52,7 @@ template <typename Ty, typename SizeType> struct spt_storage {
 	}
 	SizeType get_next_free_index() const {
 		return static_cast<SizeType>(
-		    (*reinterpret_cast<std::uintptr_t*>(&storage)) >>
+		    (*reinterpret_cast<const std::uintptr_t*>(&storage)) >>
 		    constants::k_link_shift);
 	}
 	const Ty* get() const { return storage; }
@@ -66,7 +66,12 @@ class sparse_table_of_pointers
           Ty*, SizeType, Allocator, details::spt_backref<Ty, Backref, SizeType>,
           details::spt_storage<Ty, SizeType>> {
 public:
-	using element_type = Ty;
+	using ulink = cpptables::link<Ty, SizeType>;
+	inline void erase(ulink iIndex) { this_type::erase(link(iIndex)); }
+	inline const Ty& at(ulink iIndex) const {
+		return *this_type::at(link(iIndex));
+	}
+	inline Ty& at(ulink iIndex) { return *this_type::at(link(iIndex)); }
 };
 } // namespace details
 } // namespace cpptables

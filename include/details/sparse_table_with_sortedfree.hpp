@@ -17,6 +17,7 @@ class sparse_table_with_sortedfree : Allocator {
 		std::uint8_t storage[sizeof(Ty)];
 
 		inline SizeType get_integer() const noexcept { return integer; }
+		inline SizeType* get_integer_p() noexcept { return &integer; }
 		inline void set_integer(SizeType iData) noexcept { integer = iData; }
 
 		inline const Ty& get() const noexcept { return object; }
@@ -39,15 +40,15 @@ class sparse_table_with_sortedfree : Allocator {
 		void construct(const Ty& iObject) { new (storage) Ty(iObject); }
 		void construct(Ty&& iObject) { new (storage) Ty(std::move(iObject)); }
 		template <typename... Args> void construct(Args&&... args) {
-			new (storage) Ty(std::move(data_block(std::forward<Args>(args)...)));
+			new (storage) Ty(std::forward<Args>(args)...);
 		}
 		void destroy() { object.~Ty(); }
 	};
 	using dbpointer = data_block*;
 
 public:
-	using element_type = Ty;
-	using size_type    = SizeType;
+	using value_type = Ty;
+	using size_type  = SizeType;
 	using this_type =
 	    sparse_table_with_sortedfree<Ty, SizeType, Allocator, Backref, Storage>;
 	using link            = link<Ty, SizeType>;
@@ -279,6 +280,7 @@ public:
 #endif
 		items_[id].destroy();
 		insert_free_index(id);
+		valid_count_--;
 	}
 
 	inline Ty& at(link iIndex) {
@@ -337,8 +339,10 @@ private:
 		size_type* prev = &first_free_index_;
 		size_type curr  = first_free_index_;
 
-		while (curr < iItem)
-			curr = get_next_free_slot(curr);
+		while (curr < iItem) {
+			prev = items_[curr].get_integer_p();
+			curr = *prev;
+		}
 		*prev = iItem;
 		items_[iItem].set_integer(curr);
 		return;
@@ -347,12 +351,14 @@ private:
 		if (capacity_ < size_ + 1)
 			unchecked_reserve(size_ + std::max<size_type>(size_ >> 1, 1));
 		items_[size_++].construct(x);
+		valid_count_++;
 	}
 
 	template <class... Args> void emplace_back(Args&&... args) {
 		if (capacity_ < size_ + 1)
 			unchecked_reserve(size_ + std::max<size_type>(size_ >> 1, 1));
 		items_[size_++].construct(std::forward<Args>(args)...);
+		valid_count_++;
 	}
 
 	template <typename Lambda, typename Type>

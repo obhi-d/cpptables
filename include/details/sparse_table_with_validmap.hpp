@@ -39,15 +39,15 @@ class sparse_table_with_validmap : Allocator {
 		void construct(const Ty& iObject) { new (storage) Ty(iObject); }
 		void construct(Ty&& iObject) { new (storage) Ty(std::move(iObject)); }
 		template <typename... Args> void construct(Args&&... args) {
-			new (storage) Ty(std::move(data_block(std::forward<Args>(args)...)));
+			new (storage) Ty(std::forward<Args>(args)...);
 		}
 		void destroy() { object.~Ty(); }
 	};
 	using dbpointer = data_block*;
 
 public:
-	using element_type = Ty;
-	using size_type    = SizeType;
+	using value_type = Ty;
+	using size_type  = SizeType;
 	using this_type =
 	    sparse_table_with_validmap<Ty, SizeType, Allocator, Backref, Storage>;
 	using link            = link<Ty, size_type>;
@@ -371,7 +371,7 @@ private:
 		size_type end   = iCont.size_;
 		if (begin < iCont.usage_.size()) {
 			for (; begin < end; ++begin) {
-				if (!iCont.is_valid(begin))
+				if (iCont.is_valid(begin))
 					std::forward<Lambda>(iLambda)(iCont.items_[begin].get());
 			}
 		} else {
@@ -387,7 +387,7 @@ private:
 		size_type end   = iEnd;
 		if (begin < iCont.usage_.size()) {
 			for (; begin < end; ++begin) {
-				if (!iCont.is_valid(begin))
+				if (iCont.is_valid(begin))
 					std::forward<Lambda>(iLambda)(iCont.items_[begin].get());
 			}
 		} else {

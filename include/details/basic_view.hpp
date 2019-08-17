@@ -7,7 +7,7 @@ template <typename Container> class basic_view {
 public:
 	using size_type    = typename Container::size_type;
 	using link         = typename Container::link;
-	using element_type = typename Container::element_type;
+	using value_type = typename Container::value_type;
 
 	basic_view(Container& iTy, const podvector<size_type>& iList)
 	    : container(iTy), items(iList) {}
@@ -45,28 +45,28 @@ public:
 			std::forward<Lambda>(iLambda)(container.get()[items[iFirst]]);
 		}
 	}
-	inline element_type& at(size_type iIndex) {
+	inline value_type& at(size_type iIndex) {
 		return container.get()[items[iIndex]];
 	}
-	inline const element_type& at(size_type iIndex) const {
+	inline const value_type& at(size_type iIndex) const {
 		return container.get()[items[iIndex]];
 	}
-	inline void insert(const element_type& iComp) {
+	inline void insert(const value_type& iComp) {
 		insert(container.get().get_link(iComp));
 	}
 	inline void insert(link iCompIndex) { items.push_back(iCompIndex); }
-	inline void push_back(const element_type& iComp) {
+	inline void push_back(const value_type& iComp) {
 		items.push_back(container.get().get_link(iComp));
 	}
 	inline void push_back(link iCompIndex) { items.push_back(iCompIndex); }
-	inline bool erase(const element_type& iComp) {
+	inline bool erase(const value_type& iComp) {
 		return erase(container.get().get_link(iComp));
 	}
 	inline bool erase(link iCompIndex) {
 		items[find(iCompIndex)] = items.back();
 		items.pop_back();
 	}
-	inline size_type find(const element_type& iComp) const {
+	inline size_type find(const value_type& iComp) const {
 		return find(container.get().get_link(iComp));
 	}
 	inline size_type find(link iCompIndex) const {

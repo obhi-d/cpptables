@@ -91,10 +91,10 @@ struct alignas(alignof(Ty)) storage_with_backref {
 	template <typename... Args>
 	storage_with_backref(Args&&... args) : data(std::forward<Args>(args)...) {}
 
-	void construct(const Ty& iObject) { data = iObject; }
-	void construct(Ty&& iObject) { data = std::move(iObject); }
+	void construct(const Ty& iObject) { new (&data.object) Ty(iObject); }
+	void construct(Ty&& iObject) { new (&data.object) Ty(std::move(iObject)); }
 	template <typename... Args> void construct(Args&&... args) {
-		data = std::move(data_block(std::forward<Args>(args)...));
+		new (&data.object) Ty(std::forward<Args>(args)...);
 	}
 
 	inline storage_with_backref& operator=(const storage_with_backref& iObject) =

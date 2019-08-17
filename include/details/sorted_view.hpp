@@ -9,7 +9,7 @@ public:
 	using super        = basic_view<Container>;
 	using size_type    = typename Container::size_type;
 	using link         = typename Container::link;
-	using element_type = typename Container::element_type;
+	using value_type = typename Container::value_type;
 	sorted_view(Container& iTy, const podvector<size_type>& iList)
 	    : super(iTy, iList) {}
 	sorted_view(Container& iTy, podvector<size_type>&& iList)

@@ -11,6 +11,9 @@ template <typename Ty, typename SizeType = std::uint32_t,
           typename Storage   = std::false_type>
 class sparse_table_with_no_iter : Allocator {
 
+	static_assert(
+	    std::is_trivially_copyable_v<Ty> && std::is_trivially_destructible_v<Ty>,
+	    "Type should be trivially copyable and trivially destructible!");
 	union alignas(alignof(Ty)) data_block {
 		Ty object;
 		SizeType integer;
@@ -39,15 +42,15 @@ class sparse_table_with_no_iter : Allocator {
 		void construct(const Ty& iObject) { new (storage) Ty(iObject); }
 		void construct(Ty&& iObject) { new (storage) Ty(std::move(iObject)); }
 		template <typename... Args> void construct(Args&&... args) {
-			new (storage) Ty(std::move(data_block(std::forward<Args>(args)...)));
+			new (storage) Ty(std::forward<Args>(args)...);
 		}
 		void destroy() { object.~Ty(); }
 	};
 	using dbpointer = data_block*;
 
 public:
-	using element_type = Ty;
-	using size_type    = SizeType;
+	using value_type = Ty;
+	using size_type  = SizeType;
 	using this_type =
 	    sparse_table_with_no_iter<Ty, SizeType, Allocator, Backref, Storage>;
 	using link            = link<Ty, SizeType>;
@@ -103,7 +106,7 @@ public:
 #ifdef CPPTABLES_DEBUG
 		link_numbr = index_t(index, spoilers[index]).value();
 #endif
-		set_link(items_[index], link_numbr);
+		set_link(items_[index].get(), link_numbr);
 		return link_numbr;
 	}
 
@@ -123,7 +126,7 @@ public:
 #ifdef CPPTABLES_DEBUG
 		link_numbr = index_t(index, spoilers[index]).value();
 #endif
-		set_link(items_[index], link_numbr);
+		set_link(items_[index].get(), link_numbr);
 		return index;
 	}
 
@@ -144,6 +147,7 @@ public:
 		items_[id].destroy();
 		items_[id].set_integer(first_free_index_);
 		first_free_index_ = id;
+		valid_count_--;
 	}
 
 	inline Ty& at(link iIndex) {
@@ -193,13 +197,15 @@ private:
 	void push_back(const Ty& x) {
 		if (capacity_ < size_ + 1)
 			unchecked_reserve(size_ + std::max<size_type>(size_ >> 1, 1));
-		data_[size_++].construct(x);
+		items_[size_++].construct(x);
+		valid_count_++;
 	}
 
 	template <class... Args> void emplace_back(Args&&... args) {
 		if (capacity_ < size_ + 1)
 			unchecked_reserve(size_ + std::max<size_type>(size_ >> 1, 1));
-		data_[size_++].construct(std::forward<Args>(args)...);
+		items_[size_++].construct(std::forward<Args>(args)...);
+		valid_count_++;
 	}
 
 	template <typename Lambda, typename Type>
@@ -234,44 +240,22 @@ private:
 		}
 	}
 	inline dbpointer allocate(size_type n) {
-		return reinterpret_cast<dppointer>(Allocator::allocate(n));
+		return reinterpret_cast<dbpointer>(Allocator::allocate(n));
 	}
 	inline void deallocate() {
 		Allocator::deallocate(reinterpret_cast<Ty*>(items_), capacity_);
 	}
 
 	inline void destroy_and_deallocate() {
-
-		if constexpr (!std::is_trivially_destructible_v<Ty>) {
-			for (size_type i = 0; i < size_; ++i) {
-				if (is_valid(i))
-					items_[i].get().~Ty();
-			}
-		}
 		deallocate();
 		capacity_    = 0;
 		size_        = 0;
 		valid_count_ = 0;
-		usage_.clear();
 	}
 
 	inline void unchecked_reserve(size_type n) {
-		dppointer d = allocate(n);
-		if (std::is_trivially_copyable_v<Ty>)
-			std::memcpy(d, items_, size_ * sizeof(Ty));
-		else {
-			size_type mcopy = std::min<size_type>(size_, n);
-			for (size_type i = 0; i < mcopy; ++i) {
-				if (is_valid(i)) {
-					d[i].construct(std::move(items_[i].get()));
-					if constexpr (!std::is_trivially_destructible_v<Ty>) {
-						items_[i].get().~Ty();
-					}
-				} else {
-					d[i].set_integer(items_[i].get_integer());
-				}
-			}
-		}
+		dbpointer d = allocate(n);
+		std::memcpy(d, items_, size_ * sizeof(Ty));
 		deallocate();
 		items_    = d;
 		capacity_ = n;

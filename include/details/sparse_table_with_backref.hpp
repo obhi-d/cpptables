@@ -10,7 +10,8 @@ template <typename Ty, typename SizeType, typename Allocator, typename Backref,
 class sparse_table_with_backref {
 
 public:
-	using size_type = SizeType;
+	using value_type = Ty;
+	using size_type  = SizeType;
 	using this_type =
 	    sparse_table_with_backref<Ty, SizeType, Allocator, Backref, Storage>;
 	using link      = link<Ty, SizeType>;
@@ -220,7 +221,8 @@ public:
 		SizeType index = first_free_index_;
 		if (index == constants::k_null) {
 			index = static_cast<SizeType>(items_.size());
-			items_.emplace_back(std::forward<Args>(args)...);
+			items_.emplace_back();
+			items_.back().construct(std::forward<Args>(args)...);
 #ifdef CPPTABLES_DEBUG
 			spoilers_.emplace_back(0);
 #endif
