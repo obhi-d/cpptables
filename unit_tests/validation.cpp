@@ -160,21 +160,21 @@ template <typename Cont> void validate() {
 int main() {
 
 	try {
-	// msvc bug
+		// msvc bug
 #ifndef _MSC_VER
-	validate<cpptables::tbl_sparse_br<CObject, &CObject::index>>();
+		validate<cpptables::tbl_sparse_br<CObject, &CObject::index>>();
 #endif
-	validate<cpptables::tbl_packed<CObject>>();
-	validate<cpptables::tbl_packed_br<CObject, &CObject::index>>();
-	validate<cpptables::tbl_sparse_sfree_br<CObject, &CObject::index>>();
-	validate<cpptables::tbl_sparse_vmap_br<CObject, &CObject::index>>();
-	validate<cpptables::tbl_sparse_sfree<CObject>>();
-	validate<cpptables::tbl_sparse_vmap<CObject>>();
-	validate<cpptables::tbl_sparse_no_iter<SObject>>();
-	validate<cpptables::tbl_sparse_no_iter_br<SObject, &SObject::index>>();
-	validate<cpptables::tbl_sparse_ptr<CObject>>();
-	validate<cpptables::tbl_sparse_ptr_br<CObject, &CObject::index>>();
-	} catch(std::exception ex) {
+		validate<cpptables::tbl_packed<CObject>>();
+		validate<cpptables::tbl_packed_br<CObject, &CObject::index>>();
+		validate<cpptables::tbl_sparse_sfree_br<CObject, &CObject::index>>();
+		validate<cpptables::tbl_sparse_vmap_br<CObject, &CObject::index>>();
+		validate<cpptables::tbl_sparse_sfree<CObject>>();
+		validate<cpptables::tbl_sparse_vmap<CObject>>();
+		validate<cpptables::tbl_sparse_no_iter<SObject>>();
+		validate<cpptables::tbl_sparse_no_iter_br<SObject, &SObject::index>>();
+		validate<cpptables::tbl_sparse_ptr<CObject>>();
+		validate<cpptables::tbl_sparse_ptr_br<CObject, &CObject::index>>();
+	} catch (std::exception ex) {
 		std::cerr << "Failed with " << ex.what() << std::endl;
 		return 0;
 	}

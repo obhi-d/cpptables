@@ -11,6 +11,21 @@ template <typename Ty, typename SizeType> struct link {
 	link()              = default;
 	link(const link& i) = default;
 	link(SizeType i) : offset(i) {}
+
+	template <typename Uy>
+	link(const link<Uy, SizeType>& i,
+	     std::enable_if_t<std::is_convertible_v<Uy*, Ty*>>* = nullptr)
+	    : offset(i.offset) {}
+
+	link& operator=(const link& i) = default;
+
+	template <typename Uy>
+	std::enable_if_t<std::is_convertible_v<Uy*, Ty*>, link&> operator=(
+	    const link<Uy, SizeType>& i) {
+		offset = i.offset;
+		return *this;
+	}
+
 	inline operator SizeType() { return offset; }
 	inline operator bool() { return offset != k_null; }
 
