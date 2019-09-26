@@ -176,7 +176,7 @@ int main() {
 		validate<cpptables::tbl_sparse_ptr_br<CObject, &CObject::index>>();
 	} catch (std::exception ex) {
 		std::cerr << "Failed with " << ex.what() << std::endl;
-		return 0;
+		return -1;
 	}
 	std::cout << "Passing" << std::endl;
 	return 0;

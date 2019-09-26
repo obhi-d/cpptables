@@ -9,113 +9,110 @@ template <typename Ty, typename Backref, typename SizeType>
 struct alignas(alignof(Ty)) storage_with_backref {
 	using constants = details::constants<SizeType>;
 
-	union data_block {
-		Ty object;
-		std::uint8_t storage[sizeof(Ty)];
-
-		inline bool is_null() const noexcept {
-			return (static_cast<SizeType>(Backref::template get_link<Ty, SizeType>(object)) &
-			        constants::k_invalid_bit) != 0;
-		}
-
-		inline SizeType get_data() const noexcept {
-			return static_cast<SizeType>(Backref::template get_link<Ty, SizeType>(object));
-		}
-
-		inline void set_data(SizeType iData) noexcept {
-			return Backref::template set_link<Ty, SizeType>(object, iData);
-		}
-
-		data_block() noexcept {}
-		data_block(const data_block& iOther) noexcept {
+	storage_with_backref() noexcept { set_null(); }
+	storage_with_backref(const storage_with_backref& iCopy) noexcept {
+		if (!iCopy.is_null())
+			new (&storage) Ty(iCopy.object());
+		else
+			set_link_index(iCopy.get_link_index());
+	}
+	storage_with_backref(storage_with_backref&& iMove) noexcept {
+		if (!iMove.is_null())
+			new (&storage) Ty(std::move(iMove.object()));
+		else
+			set_link_index(iMove.get_link_index());
+	}
+	storage_with_backref& operator=(const storage_with_backref& iOther) noexcept {
+		if (!is_null()) {
 			if (!iOther.is_null())
-				new (&object) Ty(iOther);
-			else
-				set_data(iOther.get_data());
-		}
-		data_block(data_block&& iOther) noexcept {
+				object() = iOther.object();
+			else {
+				object().~Ty();
+				set_link_index(iOther.get_link_index());
+			}
+		} else {
 			if (!iOther.is_null())
-				new (&object) Ty(std::move(iOther.object));
+				new (&storage) Ty(iOther.object());
 			else
-				set_data(iOther.get_data());
+				set_link_index(iOther.get_link_index());
 		}
-		data_block& operator=(const data_block& iOther) noexcept {
-			if (!is_null()) {
-				if (!iOther.is_null())
-					object = iOther.object;
-				else {
-					object.~Ty();
-					set_data(iOther.get_data());
-				}
-			} else {
-				if (!iOther.is_null())
-					new (&object) Ty(iOther.object);
-				else
-					set_data(iOther.get_data());
+		return *this;
+	}
+	storage_with_backref& operator=(storage_with_backref&& iOther) noexcept {
+		if (!is_null()) {
+			if (!iOther.is_null())
+				object() = std::move(iOther.object());
+			else {
+				object().~Ty();
+				set_link_index(iOther.get_link_index());
 			}
-			return *this;
+		} else {
+			if (!iOther.is_null())
+				new (&storage) Ty(std::move(iOther.object()));
+			else
+				set_link_index(iOther.get_link_index());
 		}
-		data_block& operator=(data_block&& iOther) noexcept {
-			if (!is_null()) {
-				if (!iOther.is_null())
-					object = std::move(iOther.object);
-				else {
-					object.~Ty();
-					set_data(iOther.get_data());
-				}
-			} else {
-				if (!iOther.is_null())
-					new (&object) Ty(std::move(iOther.object));
-				else
-					set_data(iOther.get_data());
-			}
-			return *this;
-		}
-
-		data_block(const Ty& iObject) noexcept : object(iObject) {}
-		data_block(Ty&& iObject) noexcept : object(std::move(iObject)) {}
-		template <typename... Args>
-		data_block(Args&&... iArgs) noexcept
-		    : object(std::forward<Args>(iArgs)...) {}
-		~data_block() noexcept {}
-	};
-
-	storage_with_backref()                                    = default;
-	storage_with_backref(const storage_with_backref& iObject) = default;
-	storage_with_backref(storage_with_backref&& iObject)      = default;
-
-	storage_with_backref(const Ty& iObject) : data(iObject) {}
-	storage_with_backref(Ty&& iObject) : data(std::move(iObject)) {}
-
-	~storage_with_backref() = default;
-	template <typename... Args>
-	storage_with_backref(Args&&... args) : data(std::forward<Args>(args)...) {}
-
-	void construct(const Ty& iObject) { new (&data.object) Ty(iObject); }
-	void construct(Ty&& iObject) { new (&data.object) Ty(std::move(iObject)); }
-	template <typename... Args> void construct(Args&&... args) {
-		new (&data.object) Ty(std::forward<Args>(args)...);
+		return *this;
+	}
+	storage_with_backref(const Ty& iObject) noexcept {
+		new (&storage) Ty(iOther);
+	}
+	storage_with_backref(Ty&& iObject) noexcept {
+		new (&storage) Ty(std::move(iOther));
+	}
+	template <typename... Args> storage_with_backref(Args&&... args) {
+		new (&storage) Ty(std::forward<Args>(args)...);
 	}
 
-	inline storage_with_backref& operator=(const storage_with_backref& iObject) =
-	    default;
+	~storage_with_backref() {
+		if (!is_null())
+			destroy();
+	}
 
-	inline storage_with_backref& operator=(storage_with_backref&& iObject) =
-	    default;
+	inline Ty& object() noexcept { return reinterpret_cast<Ty&>(storage); }
+	inline const Ty& object() const noexcept {
+		return reinterpret_cast<Ty&>(storage);
+	}
 
-	bool is_null() const { return data.is_null(); }
-	void destroy() { data.object.~Ty(); }
+	inline SizeType get_link_index() const noexcept {
+		return static_cast<SizeType>(
+		    Backref::template get_link<Ty, SizeType>(object()));
+	}
+	inline void set_link_index(SizeType iData) noexcept {
+		return Backref::template set_link<Ty, SizeType>(object(), iData);
+	}
+	inline bool is_null() const noexcept {
+		return (static_cast<SizeType>(
+		            Backref::template get_link<Ty, SizeType>(object())) &
+		        constants::k_invalid_bit) != 0;
+	}
+	inline void set_null() const noexcept {
+		set_link_index(constants::k_invalid_bit);
+	}
+
+	void construct(const Ty& iObject) { new (&storage) Ty(iObject); }
+	void construct(Ty&& iObject) { new (&storage) Ty(std::move(iObject)); }
+	template <typename... Args> void construct(Args&&... args) {
+		new (&storage) Ty(std::forward<Args>(args)...);
+	}
+	void destroy_if_not_null() {
+		if (!is_null()) {
+			destroy();
+			set_null();
+		}
+	}
+	void destroy() { object().~Ty(); }
 	void set_next_free_index(SizeType iIndex) {
 		assert((iIndex & constants::k_invalid_bit) == 0);
-		data.set_data(iIndex | constants::k_invalid_bit);
+		set_link_index(iIndex | constants::k_invalid_bit);
 	}
 	SizeType get_next_free_index() const {
-		return data.get_data() & constants::k_link_mask;
+		return get_link_index() & constants::k_link_mask;
 	}
-	const Ty& get() const { return data.object; }
-	Ty& get() { return data.object; }
+	const Ty& get() const { return object(); }
+	Ty& get() { return object(); }
 
-	data_block data;
+	std::aligned_storage_t<sizeof(Ty), alignof(Ty)> storage;
 };
 } // namespace details
 } // namespace cpptables
