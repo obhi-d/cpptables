@@ -55,10 +55,10 @@ struct alignas(alignof(Ty)) storage_with_backref {
 		return *this;
 	}
 	storage_with_backref(const Ty& iObject) noexcept {
-		new (&storage) Ty(iOther);
+		new (&storage) Ty(iObject);
 	}
 	storage_with_backref(Ty&& iObject) noexcept {
-		new (&storage) Ty(std::move(iOther));
+		new (&storage) Ty(std::move(iObject));
 	}
 	template <typename... Args> storage_with_backref(Args&&... args) {
 		new (&storage) Ty(std::forward<Args>(args)...);
