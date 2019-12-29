@@ -117,7 +117,7 @@ template <typename SizeType> struct index_t {
 	using constants = details::constants<SizeType>;
 	index_t()       = default;
 	index_t(SizeType iID) : val_(iID) {}
-#ifdef L_DEBUG
+#ifdef CPPTABLES_DEBUG
 	index_t(SizeType iIndex, std::uint8_t iSpoiler)
 	    : val_(iIndex |
 	           (static_cast<SizeType>(iSpoiler) << constants::k_spoiler_shift)) {}

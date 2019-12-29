@@ -70,8 +70,8 @@ struct alignas(alignof(Ty)) storage_with_backref {
 	}
 
 	inline Ty& object() noexcept { return reinterpret_cast<Ty&>(storage); }
-	inline const Ty& object() const noexcept {
-		return reinterpret_cast<Ty&>(storage);
+	inline Ty const& object() const noexcept {
+		return reinterpret_cast<Ty const&>(storage);
 	}
 
 	inline SizeType get_link_index() const noexcept {
@@ -86,7 +86,7 @@ struct alignas(alignof(Ty)) storage_with_backref {
 		            Backref::template get_link<Ty, SizeType>(object())) &
 		        constants::k_invalid_bit) != 0;
 	}
-	inline void set_null() const noexcept {
+	inline void set_null() noexcept {
 		set_link_index(constants::k_invalid_bit);
 	}
 

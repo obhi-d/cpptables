@@ -74,13 +74,19 @@ template <typename Cont> struct helper {
 	using utype = std::conditional_t<is_p, std::remove_pointer_t<val_t>, val_t>;
 	using set_t = typename utype::set;
 	using link  = typename utype::link;
+	using cleanup_list =
+	    std::conditional_t<is_p, std::vector<std::unique_ptr<utype>>,
+	                       std::size_t>;
+
 	static void insert(set_t& oSet, std::uint32_t iOffset, Cont& iCont,
-	                   std::uint32_t iCount) {
+	                   std::uint32_t iCount, [[maybe_unused]] cleanup_list& oL) {
 		for (std::uint32_t i = 0; i < iCount; ++i) {
 			std::string name = std::to_string(i + iOffset) + ".o";
 			link l;
 			if constexpr (std::is_pointer_v<typename Cont::value_type>) {
-				l = link(iCont.insert(new utype()));
+				utype* data = new utype();
+				oL.emplace_back(data);
+				l = link(iCont.insert(data));
 				iCont.at(l).set_name(name);
 			} else {
 				l = iCont.insert(typename Cont::value_type());
@@ -92,12 +98,14 @@ template <typename Cont> struct helper {
 	}
 
 	static void emplace(set_t& oSet, std::uint32_t iOffset, Cont& iCont,
-	                    std::uint32_t iCount) {
+	                    std::uint32_t iCount, [[maybe_unused]] cleanup_list& oL) {
 		for (std::uint32_t i = 0; i < iCount; ++i) {
 			std::string name = std::to_string(i + iOffset) + ".o";
 			link l;
 			if constexpr (is_p) {
-				l = link(iCont.emplace(new utype()));
+				utype* data = new utype();
+				oL.emplace_back(data);
+				l = link(iCont.emplace(data));
 				iCont.at(l).set_name(name);
 			} else {
 				l = iCont.emplace();
@@ -112,48 +120,54 @@ template <typename Cont> struct helper {
 template <typename Cont> void validate() {
 	Cont cont;
 	typename helper<Cont>::set_t check;
-	// Insert items
-	std::uint32_t count = range_rand<std::uint32_t>(100, 100000);
-	// insertion
-	helper<Cont>::insert(check, 0, cont, count >> 1);
-	// emplace
-	helper<Cont>::emplace(check, count >> 1, cont, count >> 1);
-	// for_each
-	if constexpr ((Cont::tags & cpptables::tags::no_iter::value) != 0) {
-		std::uint32_t ec = range_rand<std::uint32_t>(1, count >> 2);
-		for (std::uint32_t i = 0; i < ec; ++i) {
-			std::string name =
-			    std::to_string(range_rand<std::uint32_t>(0, count)) + ".o";
-			auto it = check.second.find(name);
-			if (it != check.second.end() && range_rand<std::uint32_t>(0, 100) > 50) {
-				cont.erase(it->second);
-				check.first.erase(it->second);
-				check.second.erase(it);
+	typename helper<Cont>::cleanup_list cleaner;
+	for (int times = 0; times < 4; times++) {
+
+		// Insert items
+		std::uint32_t count = range_rand<std::uint32_t>(10, 1000);
+		// insertion
+		helper<Cont>::insert(check, 0, cont, count >> 1, cleaner);
+		// emplace
+		helper<Cont>::emplace(check, count >> 1, cont, count >> 1, cleaner);
+		// for_each
+		if constexpr ((Cont::tags & cpptables::tags::no_iter::value) != 0) {
+			std::uint32_t ec = range_rand<std::uint32_t>(1, count >> 2);
+			for (std::uint32_t i = 0; i < ec; ++i) {
+				std::string name =
+				    std::to_string(range_rand<std::uint32_t>(0, count)) + ".o";
+				auto it = check.second.find(name);
+				if (it != check.second.end() &&
+				    range_rand<std::uint32_t>(0, 100) > 50) {
+					cont.erase(it->second);
+					check.first.erase(it->second);
+					check.second.erase(it);
+				}
 			}
+			REQUIRE(cont.size() == check.first.size());
+		} else {
+			std::vector<typename helper<Cont>::link> erase_list;
+			cont.for_each([&check](auto item) {
+				REQUIRE(check.second.find(item->name) != check.second.end());
+			});
+			cont.for_each(range_rand<std::uint32_t>(0, count >> 2),
+			              range_rand<std::uint32_t>(count >> 2, count),
+			              [&](auto item) {
+				              auto it = check.second.find(item->name);
+				              REQUIRE(it != check.second.end());
+				              if (range_rand<std::uint32_t>(0, 100) > 50) {
+					              erase_list.push_back((*it).second);
+					              check.first.erase((*it).second);
+					              check.second.erase(it);
+				              }
+			              });
+			for (auto& i : erase_list) {
+				cont.erase(i);
+			}
+			REQUIRE(cont.size() == check.first.size());
+			cont.for_each([&check](auto item) {
+				REQUIRE(check.second.find(item->name) != check.second.end());
+			});
 		}
-		REQUIRE(cont.size() == check.first.size());
-	} else {
-		std::vector<typename helper<Cont>::link> erase_list;
-		cont.for_each([&check](auto item) {
-			REQUIRE(check.second.find(item->name) != check.second.end());
-		});
-		cont.for_each(range_rand<std::uint32_t>(0, count >> 2),
-		              range_rand<std::uint32_t>(count >> 2, count), [&](auto item) {
-			              auto it = check.second.find(item->name);
-			              REQUIRE(it != check.second.end());
-			              if (range_rand<std::uint32_t>(0, 100) > 50) {
-				              erase_list.push_back((*it).second);
-				              check.first.erase((*it).second);
-				              check.second.erase(it);
-			              }
-		              });
-		for (auto& i : erase_list) {
-			cont.erase(i);
-		}
-		REQUIRE(cont.size() == check.first.size());
-		cont.for_each([&check](auto item) {
-			REQUIRE(check.second.find(item->name) != check.second.end());
-		});
 	}
 }
 
