@@ -9,7 +9,7 @@ public:
 	using link         = typename Container::link;
 	using value_type = typename Container::value_type;
 
-	basic_view(Container& iTy, const podvector<size_type>& iList)
+	basic_view(Container& iTy, podvector<size_type> const& iList)
 	    : container(iTy), items(iList) {}
 	basic_view(Container& iTy, podvector<size_type>&& iList)
 	    : container(iTy), items(std::move(iList)) {}
@@ -17,7 +17,7 @@ public:
 	basic_view(basic_view&& iOther)
 	    : container(std::move(iOther.container)), items(std::move(iOther.items)) {
 	}
-	basic_view(const basic_view& iOther)
+	basic_view(basic_view const& iOther)
 	    : container(iOther.container), items(iOther.items) {}
 
 	inline basic_view& operator=(basic_view&& iOther) {
@@ -26,7 +26,7 @@ public:
 		return *this;
 	}
 
-	inline basic_view& operator=(const basic_view& iOther) {
+	inline basic_view& operator=(basic_view const& iOther) {
 		container = iOther.container;
 		items     = iOther.items;
 		return *this;
@@ -51,22 +51,22 @@ public:
 	inline const value_type& at(size_type iIndex) const {
 		return container.get()[items[iIndex]];
 	}
-	inline void insert(const value_type& iComp) {
+	inline void insert(value_type const& iComp) {
 		insert(container.get().get_link(iComp));
 	}
 	inline void insert(link iCompIndex) { items.push_back(iCompIndex); }
-	inline void push_back(const value_type& iComp) {
+	inline void push_back(value_type const& iComp) {
 		items.push_back(container.get().get_link(iComp));
 	}
 	inline void push_back(link iCompIndex) { items.push_back(iCompIndex); }
-	inline void erase(const value_type& iComp) {
+	inline void erase(value_type const& iComp) {
 		erase(container.get().get_link(iComp));
 	}
 	inline void erase(link iCompIndex) {
 		items[find(iCompIndex)] = items.back();
 		items.pop_back();
 	}
-	inline size_type find(const value_type& iComp) const {
+	inline size_type find(value_type const& iComp) const {
 		return find(container.get().get_link(iComp));
 	}
 	inline size_type find(link iCompIndex) const {

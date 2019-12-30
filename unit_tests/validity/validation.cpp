@@ -34,16 +34,16 @@ struct SObject {
 struct CObject {
 	using link              = cpptables::link<CObject, std::uint32_t>;
 	CObject()               = default;
-	CObject(const CObject&) = default;
+	CObject(CObject const&) = default;
 	CObject(CObject&&)      = default;
 
-	CObject& operator=(const CObject&) = default;
+	CObject& operator=(CObject const&) = default;
 	CObject& operator=(CObject&&) = default;
 
 	CObject(std::string_view iName) : name(iName) {}
 
 	inline CObject* operator->() { return this; }
-	inline const CObject* operator->() const { return this; }
+	inline CObject const* operator->() const { return this; }
 	void set_name(std::string_view iName) { name = iName; }
 	std::string name    = "default";
 	std::uint32_t index = 0;
@@ -55,7 +55,7 @@ struct CObject {
 	};
 
 	static void set_link(CObject& iInst, link iLink) { iInst.index = iLink; }
-	static link get_link(const CObject& iInst) { return iInst.index; }
+	static link get_link(CObject const& iInst) { return iInst.index; }
 
 	using fwset = std::unordered_map<link, std::string, CObject::LinkHash>;
 	using bwset = std::unordered_map<std::string, link>;
@@ -121,16 +121,23 @@ template <typename Cont> void validate() {
 	Cont cont;
 	typename helper<Cont>::set_t check;
 	typename helper<Cont>::cleanup_list cleaner;
+	std::uint32_t last_offset = 0;
 	for (int times = 0; times < 4; times++) {
 
 		// Insert items
 		std::uint32_t count = range_rand<std::uint32_t>(10, 1000);
 		// insertion
-		helper<Cont>::insert(check, 0, cont, count >> 1, cleaner);
+		helper<Cont>::insert(check, last_offset + 0, cont, count >> 1, cleaner);
+		REQUIRE(cont.size() == check.first.size());
 		// emplace
-		helper<Cont>::emplace(check, count >> 1, cont, count >> 1, cleaner);
+		helper<Cont>::emplace(check, last_offset + (count >> 1), cont, count >> 1,
+		                      cleaner);
+		REQUIRE(cont.size() == check.first.size());
+		last_offset += count;
 		// for_each
 		if constexpr ((Cont::tags & cpptables::tags::no_iter::value) != 0) {
+			REQUIRE(cont.size() == check.first.size());
+			REQUIRE(check.second.size() == check.first.size());
 			std::uint32_t ec = range_rand<std::uint32_t>(1, count >> 2);
 			for (std::uint32_t i = 0; i < ec; ++i) {
 				std::string name =
@@ -139,31 +146,37 @@ template <typename Cont> void validate() {
 				if (it != check.second.end() &&
 				    range_rand<std::uint32_t>(0, 100) > 50) {
 					cont.erase(it->second);
+					REQUIRE(check.first.find(it->second) != check.first.end());
 					check.first.erase(it->second);
 					check.second.erase(it);
 				}
 			}
 			REQUIRE(cont.size() == check.first.size());
+			REQUIRE(check.second.size() == check.first.size());
 		} else {
 			std::vector<typename helper<Cont>::link> erase_list;
 			cont.for_each([&check](auto item) {
 				REQUIRE(check.second.find(item->name) != check.second.end());
 			});
-			cont.for_each(range_rand<std::uint32_t>(0, count >> 2),
-			              range_rand<std::uint32_t>(count >> 2, count),
-			              [&](auto item) {
-				              auto it = check.second.find(item->name);
-				              REQUIRE(it != check.second.end());
-				              if (range_rand<std::uint32_t>(0, 100) > 50) {
-					              erase_list.push_back((*it).second);
-					              check.first.erase((*it).second);
-					              check.second.erase(it);
-				              }
-			              });
+			REQUIRE(cont.size() == check.first.size());
+			REQUIRE(check.second.size() == check.first.size());
+			cont.for_each(
+			    range_rand<std::uint32_t>(0, count >> 2),
+			    range_rand<std::uint32_t>(count >> 2, count), [&](auto item) {
+				    auto it = check.second.find(item->name);
+				    REQUIRE(it != check.second.end());
+				    if (range_rand<std::uint32_t>(0, 100) > 50) {
+					    erase_list.push_back((*it).second);
+					    REQUIRE(check.first.find(it->second) != check.first.end());
+					    check.first.erase(it->second);
+					    check.second.erase(it);
+				    }
+			    });
 			for (auto& i : erase_list) {
 				cont.erase(i);
 			}
 			REQUIRE(cont.size() == check.first.size());
+			REQUIRE(check.second.size() == check.first.size());
 			cont.for_each([&check](auto item) {
 				REQUIRE(check.second.find(item->name) != check.second.end());
 			});
@@ -175,18 +188,31 @@ TEST_CASE("Validate tbl_packed", "[tbl_packed]") {
 	validate<cpptables::tbl_packed<CObject>>();
 	validate<cpptables::tbl_packed_br<CObject, &CObject::index>>();
 }
-
-TEST_CASE("Validate tbl_sparse", "[tbl_sparse]") {
+TEST_CASE("Validate tbl_sparse_br", "[tbl_sparse_br]") {
 	// msvc bug
-#ifndef _MSC_VER
 	validate<cpptables::tbl_sparse_br<CObject, &CObject::index>>();
-#endif
+}
+TEST_CASE("Validate tbl_sparse_sfree_br", "[tbl_sparse_sfree_br]") {
 	validate<cpptables::tbl_sparse_sfree_br<CObject, &CObject::index>>();
+}
+TEST_CASE("Validate tbl_sparse_vmap_br", "[tbl_sparse_vmap_br]") {
 	validate<cpptables::tbl_sparse_vmap_br<CObject, &CObject::index>>();
+}
+TEST_CASE("Validate tbl_sparse_sfree", "[tbl_sparse_sfree]") {
 	validate<cpptables::tbl_sparse_sfree<CObject>>();
+}
+TEST_CASE("Validate tbl_sparse_vmap", "[tbl_sparse_vmap]") {
 	validate<cpptables::tbl_sparse_vmap<CObject>>();
+}
+TEST_CASE("Validate tbl_sparse_no_iter", "[tbl_sparse_no_iter]") {
 	validate<cpptables::tbl_sparse_no_iter<SObject>>();
+}
+TEST_CASE("Validate tbl_sparse_no_iter_br", "[tbl_sparse_no_iter_br]") {
 	validate<cpptables::tbl_sparse_no_iter_br<SObject, &SObject::index>>();
+}
+TEST_CASE("Validate tbl_sparse_ptr", "[tbl_sparse_ptr]") {
 	validate<cpptables::tbl_sparse_ptr<CObject>>();
+}
+TEST_CASE("Validate tbl_sparse_ptr_br", "[tbl_sparse_ptr_br]") {
 	validate<cpptables::tbl_sparse_ptr_br<CObject, &CObject::index>>();
 }

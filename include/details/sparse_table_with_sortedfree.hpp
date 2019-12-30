@@ -20,7 +20,7 @@ class sparse_table_with_sortedfree : Allocator {
 		inline SizeType* get_integer_p() noexcept { return &integer; }
 		inline void set_integer(SizeType iData) noexcept { integer = iData; }
 
-		inline const Ty& get() const noexcept { return object; }
+		inline Ty const& get() const noexcept { return object; }
 		inline Ty& get() noexcept { return object; }
 
 		data_block() noexcept {}
@@ -29,7 +29,7 @@ class sparse_table_with_sortedfree : Allocator {
 		data_block& operator=(const data_block& iOther) = delete;
 		data_block& operator=(data_block&& iOther) = delete;
 
-		data_block(const Ty& iObject) noexcept : object(iObject) {}
+		data_block(Ty const& iObject) noexcept : object(iObject) {}
 		data_block(Ty&& iObject) noexcept : object(std::move(iObject)) {}
 		template <typename... Args>
 		data_block(Args&&... iArgs) noexcept
@@ -37,7 +37,7 @@ class sparse_table_with_sortedfree : Allocator {
 
 		~data_block() noexcept {}
 
-		void construct(const Ty& iObject) { new (storage) Ty(iObject); }
+		void construct(Ty const& iObject) { new (storage) Ty(iObject); }
 		void construct(Ty&& iObject) { new (storage) Ty(std::move(iObject)); }
 		template <typename... Args> void construct(Args&&... args) {
 			new (storage) Ty(std::forward<Args>(args)...);
@@ -231,7 +231,7 @@ public:
 	/**! Total number of slots to effieiencyl do parallel iteration */
 	size_type range() const noexcept { return size_; }
 
-	inline link insert(const Ty& iObject) {
+	inline link insert(Ty const& iObject) {
 		size_type index = first_free_index_;
 		if (index == constants::k_null) {
 			index = static_cast<size_type>(size_);
@@ -242,6 +242,7 @@ public:
 		} else {
 			first_free_index_ = items_[index].get_integer();
 			items_[index].construct(iObject);
+			valid_count_++;
 		}
 		size_type link_numbr = index;
 #ifdef CPPTABLES_DEBUG
@@ -261,12 +262,13 @@ public:
 		} else {
 			first_free_index_ = items_[index].get_integer();
 			items_[index].construct(std::forward<Args>(args)...);
+			valid_count_++;
 		}
 		size_type link_numbr = index;
 #ifdef CPPTABLES_DEBUG
 		link_numbr = index_t(index, spoilers[index]).value();
 #endif
-		return index;
+		return link_numbr;
 	}
 
 	inline void erase(link iIndex) {
@@ -292,14 +294,14 @@ public:
 		return items_[id].get();
 	}
 
-	inline const Ty& at(link iIndex) const {
-		return const_cast<const Ty&>(const_cast<this_type*>(this)->at(iIndex));
+	inline Ty const& at(link iIndex) const {
+		return const_cast<Ty const&>(const_cast<this_type*>(this)->at(iIndex));
 	}
 
 	inline Ty& at_index(size_type iIndex) { return items_[iIndex].get(); }
 
-	inline const Ty& at_index(size_type iIndex) const {
-		return const_cast<const Ty&>(
+	inline Ty const& at_index(size_type iIndex) const {
+		return const_cast<Ty const&>(
 		    const_cast<this_type*>(this)->at_index(iIndex));
 	}
 
@@ -318,7 +320,7 @@ public:
 	}
 
 	static void set_link(Ty& ioObj, size_type iLink) {}
-	static size_type get_link(const Ty& ioObj) { return size_type(); }
+	static size_type get_link(Ty const& ioObj) { return size_type(); }
 
 	void clear() {
 		size_        = 0;
@@ -346,7 +348,7 @@ private:
 		items_[iItem].set_integer(curr);
 		return;
 	}
-	void push_back(const Ty& x) {
+	void push_back(Ty const& x) {
 		if (capacity_ < size_ + 1)
 			unchecked_reserve(size_ + std::max<size_type>(size_ >> 1, 1));
 		items_[size_++].construct(x);

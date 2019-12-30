@@ -35,7 +35,7 @@ public:
 		using difference_type =
 		    typename std::iterator_traits<Iterator>::difference_type;
 		iterator_wrapper()                        = default;
-		iterator_wrapper(const iterator_wrapper&) = default;
+		iterator_wrapper(iterator_wrapper const&) = default;
 		iterator_wrapper(iterator_wrapper&&)      = default;
 		~iterator_wrapper()                       = default;
 
@@ -43,12 +43,12 @@ public:
 		    : base(std::move(iBeg)), end(std::move(iEnd)) {
 			forward_valid();
 		}
-		iterator_wrapper(const Iterator& iBeg, const Iterator& iEnd)
+		iterator_wrapper(Iterator const& iBeg, Iterator const& iEnd)
 		    : base(iBeg), end(iEnd) {
 			forward_valid();
 		}
 
-		iterator_wrapper& operator=(const iterator_wrapper&) = default;
+		iterator_wrapper& operator=(iterator_wrapper const&) = default;
 		iterator_wrapper& operator=(iterator_wrapper&&) = default;
 
 		inline iterator_wrapper& operator++() {
@@ -87,21 +87,21 @@ public:
 			return *this;
 		}
 
-		inline bool operator==(const iterator_wrapper& iOther) const {
+		inline bool operator==(iterator_wrapper const& iOther) const {
 			return base == iOther.base;
 		}
 
-		inline bool operator!=(const iterator_wrapper& iOther) const {
+		inline bool operator!=(iterator_wrapper const& iOther) const {
 			return base != iOther.base;
 		}
 
-		friend inline difference_type operator-(const iterator_wrapper& iFirst,
-		                                        const iterator_wrapper& iSecond) {
+		friend inline difference_type operator-(iterator_wrapper const& iFirst,
+		                                        iterator_wrapper const& iSecond) {
 			return iFirst.base - iSecond.base;
 		}
 
-		friend inline difference_type distance(const iterator_wrapper& iFirst,
-		                                       const iterator_wrapper& iSecond) {
+		friend inline difference_type distance(iterator_wrapper const& iFirst,
+		                                       iterator_wrapper const& iSecond) {
 			return iSecond - iFirst;
 		}
 
@@ -196,7 +196,7 @@ public:
 	/**! Total number of slots to effieiencyl do parallel iteration */
 	size_type range() const noexcept { return capacity(); }
 
-	inline link insert(const Ty& iObject) {
+	inline link insert(Ty const& iObject) {
 		SizeType index = first_free_index_;
 		if (index == constants::k_null) {
 			index = static_cast<SizeType>(items_.size());
@@ -236,7 +236,7 @@ public:
 #endif
 		set_link(items_[index].get(), link_numbr);
 		valid_count_++;
-		return index;
+		return link_numbr;
 	}
 
 	inline /*std::enable_if_t<has_backref_v<Backref>>*/ void erase(
@@ -298,7 +298,7 @@ public:
 		Backref::template set_link<Ty, SizeType>(ioObj, iLink);
 	}
 
-	static SizeType get_link(const Ty& ioObj) {
+	static SizeType get_link(Ty const& ioObj) {
 		return Backref::template get_link<Ty, SizeType>(ioObj);
 	}
 

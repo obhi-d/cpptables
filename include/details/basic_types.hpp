@@ -89,7 +89,7 @@ struct no_backref : std::false_type {
 	template <typename Ty, typename SizeType>
 	inline static void set_link(Ty& oObject, SizeType iIdx) {}
 	template <typename Ty, typename SizeType>
-	inline static SizeType get_link(Ty& iObject) {
+	inline static SizeType get_link(Ty const& iObject) {
 		return SizeType();
 	}
 };
@@ -99,8 +99,8 @@ template <auto Member> struct with_backref : std::true_type {
 		*reinterpret_cast<SizeType*>(&(oObject.*Member)) = iIdx;
 	}
 	template <typename Ty, typename SizeType>
-	inline static SizeType get_link(const Ty& iObject) {
-		return *reinterpret_cast<const SizeType*>(&(iObject.*Member));
+	inline static SizeType get_link(Ty const& iObject) {
+		return *reinterpret_cast<SizeType const*>(&(iObject.*Member));
 	}
 };
 

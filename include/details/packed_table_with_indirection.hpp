@@ -75,7 +75,7 @@ public:
 	/**! Total number of slots to effieiencyl do parallel iteration */
 	size_type range() const noexcept { return size(); }
 	/**! Insert an object */
-	link insert(const Ty& iObject) noexcept {
+	link insert(Ty const& iObject) noexcept {
 		SizeType location = static_cast<SizeType>(items.size());
 		items.push_back(iObject);
 		return do_insert(location);
@@ -95,16 +95,40 @@ public:
 		assert(spoilers[id] == index.spoiler());
 		spoilers[id] = (spoilers[id] + 1) & 0x7f;
 #endif
-		items[indirection[id]] = std::move(items.back());
-		items.pop_back();
-		indirection[items.size()] = indirection[id];
-		indirection[id]           = first_free_index | constants::k_invalid_bit;
-		first_free_index          = id;
+		if (has_backref_v<Backref>) {
+			SizeType end_l = get_link(items.back());
+#ifdef CPPTABLES_DEBUG
+			index_t end_index(end_l);
+			end_l = end_index.index();
+#endif
+			items[indirection[id]] = std::move(items.back());
+			items.pop_back();
+			indirection[end_l] = indirection[id];
+
+		} else {
+			items[indirection[id]] = std::move(items.back());
+			items.pop_back();
+			size_type filler_id = static_cast<size_type>(items.size());
+			assert(filler_id < indirection.size());
+			if (indirection[filler_id] == filler_id) {
+				indirection[filler_id] = indirection[id];
+			} else {
+				for (long end = static_cast<long>(indirection.size() - 1); end >= 0;
+				     --end) {
+					if (indirection[end] == filler_id) {
+						indirection[end] = indirection[id];
+						break;
+					}
+				}
+			}
+		}
+		indirection[id]  = first_free_index | constants::k_invalid_bit;
+		first_free_index = id;
 	}
 
 	/**! Erase an object */
 	/*std::enable_if_t<has_backref_v<Backref>>void*/ void erase(
-	    const Ty& iObject) {
+	    Ty const& iObject) {
 		assert(has_backref_v<Backref> && "Not supported without backreference");
 		erase(Backref::template get_link<value_type, size_type>(iObject));
 	}
@@ -119,8 +143,8 @@ public:
 		return items[indirection[id]];
 	}
 	/**! Locate an object using its link */
-	inline const Ty& at(link iIndex) const {
-		return const_cast<const Ty&>(const_cast<this_type*>(this)->at(iIndex));
+	inline Ty const& at(link iIndex) const {
+		return const_cast<Ty const&>(const_cast<this_type*>(this)->at(iIndex));
 	}
 
 	// Iterators
@@ -137,7 +161,7 @@ public:
 		Backref::template set_link<Ty, SizeType>(ioObj, iLink);
 	}
 
-	static link get_link(Ty& ioObj) {
+	static link get_link(Ty const& ioObj) {
 		return Backref::template get_link<Ty, SizeType>(ioObj);
 	}
 

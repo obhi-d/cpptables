@@ -14,7 +14,7 @@ template <> struct constants<std::uint32_t> {
 		k_invalid_bit   = 0x80000000,
 		k_link_mask     = 0x7fffffff,
 		k_spoiler_mask  = 0x7f000000,
-		k_index_mask    = 0xff000000,
+		k_index_mask    = 0x00ffffff,
 		k_spoiler_shift = 24
 	};
 };

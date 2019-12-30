@@ -54,7 +54,7 @@ struct alignas(alignof(Ty)) storage_with_backref {
 		}
 		return *this;
 	}
-	storage_with_backref(const Ty& iObject) noexcept {
+	storage_with_backref(Ty const& iObject) noexcept {
 		new (&storage) Ty(iObject);
 	}
 	storage_with_backref(Ty&& iObject) noexcept {
@@ -90,7 +90,7 @@ struct alignas(alignof(Ty)) storage_with_backref {
 		set_link_index(constants::k_invalid_bit);
 	}
 
-	void construct(const Ty& iObject) { new (&storage) Ty(iObject); }
+	void construct(Ty const& iObject) { new (&storage) Ty(iObject); }
 	void construct(Ty&& iObject) { new (&storage) Ty(std::move(iObject)); }
 	template <typename... Args> void construct(Args&&... args) {
 		new (&storage) Ty(std::forward<Args>(args)...);
@@ -109,7 +109,7 @@ struct alignas(alignof(Ty)) storage_with_backref {
 	SizeType get_next_free_index() const {
 		return get_link_index() & constants::k_link_mask;
 	}
-	const Ty& get() const { return object(); }
+	Ty const& get() const { return object(); }
 	Ty& get() { return object(); }
 
 	std::aligned_storage_t<sizeof(Ty), alignof(Ty)> storage;
