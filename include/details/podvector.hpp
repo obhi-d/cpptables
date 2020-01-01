@@ -372,16 +372,20 @@ private:
 	inline void deallocate() { Allocator::deallocate(data_, capacity_); }
 	inline void unchecked_reserve(size_type n) {
 		pointer d = allocate(n);
-		std::memcpy(d, data_, size_ * sizeof(Ty));
-		deallocate();
+		if (data_) {
+			std::memcpy(d, data_, size_ * sizeof(Ty));
+			deallocate();
+		}
 		data_     = d;
 		capacity_ = n;
 	}
 	inline void unchecked_reserve(size_type n, size_type at, size_type holes) {
 		pointer d = allocate(n);
-		std::memcpy(d, data_, at * sizeof(Ty));
-		std::memcpy(d + at + holes, data_ + at, (size_ - at) * sizeof(Ty));
-		deallocate();
+		if (data_) {
+			std::memcpy(d, data_, at * sizeof(Ty));
+			std::memcpy(d + at + holes, data_ + at, (size_ - at) * sizeof(Ty));
+			deallocate();
+		}
 		data_     = d;
 		capacity_ = n;
 	}
