@@ -26,8 +26,8 @@ template <typename Ty, typename SizeType> struct link {
 		return *this;
 	}
 
-	inline operator SizeType() { return offset; }
-	inline operator bool() { return offset != k_null; }
+	inline operator SizeType() const { return offset; }
+	inline operator bool() const { return offset != k_null; }
 
 	friend bool operator==(link iFirst, link iSecond) {
 		return iFirst.offset == iSecond.offset;
