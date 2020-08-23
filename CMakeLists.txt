@@ -17,7 +17,7 @@ set(CPPTABLES_INCLUDE_BUILD_DIR "${PROJECT_SOURCE_DIR}/include")
 message("Target name: ${CPPTABLES_TARGET_NAME}")
 add_library(${CPPTABLES_TARGET_NAME} INTERFACE)
 add_library(${PROJECT_NAME}::${CPPTABLES_TARGET_NAME} ALIAS ${CPPTABLES_TARGET_NAME})
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_20)
 
 target_include_directories(
     ${CPPTABLES_TARGET_NAME}

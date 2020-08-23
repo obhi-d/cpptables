@@ -1,6 +1,7 @@
 #pragma once
 #include "constants.hpp"
 #include <type_traits>
+#include <compare>
 
 namespace cpptables {
 
@@ -28,25 +29,14 @@ template <typename Ty, typename SizeType> struct link {
 
 	inline operator SizeType() const { return offset; }
 	inline operator bool() const { return offset != k_null; }
+	inline auto operator <=> (link const& iSecond) const = default;
 
-	friend bool operator==(link iFirst, link iSecond) {
-		return iFirst.offset == iSecond.offset;
+  inline friend auto operator <=> (SizeType iFirst, link const& iSecond) {
+		return iFirst <=> iSecond.offset;
 	}
-	friend bool operator!=(link iFirst, link iSecond) {
-		return iFirst.offset != iSecond.offset;
-	}
-	friend bool operator<(link iFirst, link iSecond) {
-		return iFirst.offset < iSecond.offset;
-	}
-	friend bool operator>(link iFirst, link iSecond) {
-		return iFirst.offset > iSecond.offset;
-	}
-	friend bool operator<=(link iFirst, link iSecond) {
-		return iFirst.offset <= iSecond.offset;
-	}
-	friend bool operator>=(link iFirst, link iSecond) {
-		return iFirst.offset >= iSecond.offset;
-	}
+  inline friend auto operator <=> (link const& iSecond, SizeType iFirst) {
+    return iFirst <=> iSecond.offset;
+  }
 	SizeType offset = k_null;
 };
 

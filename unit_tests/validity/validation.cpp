@@ -22,7 +22,7 @@ struct SObject {
 		             std::min<std::size_t>(iName.length(), 255));
 	}
 	static void set_link(SObject& iInst, link iLink) { iInst.index = iLink; }
-	static link get_link(const SObject& iInst) { return iInst.index; }
+	static link get_link(const SObject& iInst) { return link(iInst.index); }
 
 	inline SObject* operator->() { return this; }
 	inline const SObject* operator->() const { return this; }
@@ -55,7 +55,7 @@ struct CObject {
 	};
 
 	static void set_link(CObject& iInst, link iLink) { iInst.index = iLink; }
-	static link get_link(CObject const& iInst) { return iInst.index; }
+	static link get_link(CObject const& iInst) { return link(iInst.index); }
 
 	using fwset = std::unordered_map<link, std::string, CObject::LinkHash>;
 	using bwset = std::unordered_map<std::string, link>;
