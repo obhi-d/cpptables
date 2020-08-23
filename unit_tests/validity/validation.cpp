@@ -21,7 +21,7 @@ struct SObject {
 		std::strncpy(name, iName.data(),
 		             std::min<std::size_t>(iName.length(), 255));
 	}
-	static void set_link(SObject& iInst, link iLink) { iInst.index = iLink; }
+	static void set_link(SObject& iInst, link iLink) { iInst.index = (std::uint32_t)iLink; }
 	static link get_link(const SObject& iInst) { return link(iInst.index); }
 
 	inline SObject* operator->() { return this; }
@@ -54,7 +54,7 @@ struct CObject {
 		std::size_t operator()(link l) const { return l.offset; }
 	};
 
-	static void set_link(CObject& iInst, link iLink) { iInst.index = iLink; }
+	static void set_link(CObject& iInst, link iLink) { iInst.index = (std::uint32_t)iLink; }
 	static link get_link(CObject const& iInst) { return link(iInst.index); }
 
 	using fwset = std::unordered_map<link, std::string, CObject::LinkHash>;
@@ -86,7 +86,7 @@ template <typename Cont> struct helper {
 			if constexpr (std::is_pointer_v<typename Cont::value_type>) {
 				utype* data = new utype();
 				oL.emplace_back(data);
-				l = link(iCont.insert(data));
+				l = link((std::uint32_t)iCont.insert(data));
 				iCont.at(l).set_name(name);
 			} else {
 				l = iCont.insert(typename Cont::value_type());
@@ -105,7 +105,7 @@ template <typename Cont> struct helper {
 			if constexpr (is_p) {
 				utype* data = new utype();
 				oL.emplace_back(data);
-				l = link(iCont.emplace(data));
+				l = link((std::uint32_t)iCont.emplace(data));
 				iCont.at(l).set_name(name);
 			} else {
 				l = iCont.emplace();

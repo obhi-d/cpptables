@@ -248,7 +248,7 @@ public:
 #ifdef CPPTABLES_DEBUG
 		link_numbr = index_t(index, spoilers[index]).value();
 #endif
-		return link_numbr;
+		return link(link_numbr);
 	}
 
 	template <typename... Args> inline link emplace(Args&&... args) {
@@ -268,7 +268,7 @@ public:
 #ifdef CPPTABLES_DEBUG
 		link_numbr = index_t(index, spoilers[index]).value();
 #endif
-		return link_numbr;
+		return link(link_numbr);
 	}
 
 	inline void erase(link iIndex) {
@@ -319,8 +319,8 @@ public:
 		return const_reverse_iterator(const_iterator(*this, 0));
 	}
 
-	static void set_link(Ty& ioObj, size_type iLink) {}
-	static size_type get_link(Ty const& ioObj) { return size_type(); }
+	static void set_link(Ty& ioObj, link iLink) {}
+	static link get_link(Ty const& ioObj) { return link(); }
 
 	void clear() {
 		size_        = 0;

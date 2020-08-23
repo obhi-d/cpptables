@@ -2,6 +2,7 @@
 #include "constants.hpp"
 #include <type_traits>
 #include <compare>
+#include <concepts>
 
 namespace cpptables {
 
@@ -11,24 +12,24 @@ template <typename Ty, typename SizeType> struct link {
 
 	link()              = default;
 	link(const link& i) = default;
-	link(SizeType i) : offset(i) {}
+  explicit link(SizeType i) : offset(i) {}
 
 	template <typename Uy>
-	link(const link<Uy, SizeType>& i,
+  explicit link(const link<Uy, SizeType>& i,
 	     std::enable_if_t<std::is_convertible_v<Uy*, Ty*>>* = nullptr)
 	    : offset(i.offset) {}
 
 	link& operator=(const link& i) = default;
 
 	template <typename Uy>
-	std::enable_if_t<std::is_convertible_v<Uy*, Ty*>, link&> operator=(
-	    const link<Uy, SizeType>& i) {
+	link& operator=(
+	    const link<Uy, SizeType>& i) requires std::convertible_to<Uy*, Ty*> {
 		offset = i.offset;
 		return *this;
 	}
 
-	inline operator SizeType() const { return offset; }
-	inline operator bool() const { return offset != k_null; }
+	inline explicit operator SizeType() const { return offset; }
+	inline explicit operator bool() const { return offset != k_null; }
 	inline auto operator <=> (link const& iSecond) const = default;
 
   inline friend auto operator <=> (SizeType iFirst, link const& iSecond) {
@@ -77,20 +78,20 @@ inline constexpr unsigned tags_v = details::options<Tags...>();
 
 struct no_backref : std::false_type {
 	template <typename Ty, typename SizeType>
-	inline static void set_link(Ty& oObject, SizeType iIdx) {}
+	inline static void set_link(Ty& oObject, link<Ty, SizeType> iIdx) {}
 	template <typename Ty, typename SizeType>
-	inline static SizeType get_link(Ty const& iObject) {
-		return SizeType();
+	[[maybe_unused]] inline static link<Ty, SizeType> get_link(Ty const& iObject) {
+		return {};
 	}
 };
 template <auto Member> struct with_backref : std::true_type {
 	template <typename Ty, typename SizeType>
-	inline static void set_link(Ty& oObject, SizeType iIdx) {
-		*reinterpret_cast<SizeType*>(&(oObject.*Member)) = iIdx;
+	inline static void set_link(Ty& oObject, link<Ty, SizeType> iIdx) {
+		*reinterpret_cast<SizeType*>(&(oObject.*Member)) = (SizeType)iIdx;
 	}
 	template <typename Ty, typename SizeType>
-	inline static SizeType get_link(Ty const& iObject) {
-		return *reinterpret_cast<SizeType const*>(&(iObject.*Member));
+	[[maybe_unused]] inline static link<Ty, SizeType> get_link(Ty const& iObject) {
+		return link<Ty, SizeType>(*reinterpret_cast<SizeType const*>(&(iObject.*Member)));
 	}
 };
 
@@ -111,7 +112,7 @@ template <typename SizeType> struct index_t {
 	index_t(SizeType iIndex, std::uint8_t iSpoiler)
 	    : val_(iIndex |
 	           (static_cast<SizeType>(iSpoiler) << constants::k_spoiler_shift)) {}
-	std::uint8_t spoiler() const {
+	[[nodiscard]] std::uint8_t spoiler() const {
 		return static_cast<std::uint8_t>(val_ >> constants::k_spoiler_shift) & 0x7f;
 	}
 	SizeType index() const { return val_ & constants::k_index_mask; }

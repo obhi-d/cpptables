@@ -79,7 +79,7 @@ struct alignas(alignof(Ty)) storage_with_backref {
 		    Backref::template get_link<Ty, SizeType>(object()));
 	}
 	inline void set_link_index(SizeType iData) noexcept {
-		return Backref::template set_link<Ty, SizeType>(object(), iData);
+		return Backref::template set_link<Ty, SizeType>(object(), link<Ty, SizeType>(iData));
 	}
 	inline bool is_null() const noexcept {
 		return (static_cast<SizeType>(

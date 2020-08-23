@@ -190,8 +190,8 @@ private:
 #ifdef CPPTABLES_DEBUG
 		index = index_t(index, spoilers[index]).value();
 #endif
-		Backref::template set_link<Ty, SizeType>(items[iLoc], index);
-		return index;
+		Backref::template set_link<Ty, SizeType>(items[iLoc], link(index));
+		return link(index);
 	}
 
 	template <typename Lambda, typename Type>

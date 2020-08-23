@@ -106,8 +106,8 @@ public:
 #ifdef CPPTABLES_DEBUG
 		link_numbr = index_t(index, spoilers[index]).value();
 #endif
-		set_link(items_[index].get(), link_numbr);
-		return link_numbr;
+		set_link(items_[index].get(), link(link_numbr));
+		return link(link_numbr);
 	}
 
 	template <typename... Args> inline link emplace(Args&&... args) {
@@ -127,8 +127,8 @@ public:
 #ifdef CPPTABLES_DEBUG
 		link_numbr = index_t(index, spoilers[index]).value();
 #endif
-		set_link(items_[index].get(), link_numbr);
-		return link_numbr;
+		set_link(items_[index].get(), link(link_numbr));
+		return link(link_numbr);
 	}
 
 	inline /*std::enable_if_t<has_backref_v<Backref>>*/ void erase(
@@ -172,16 +172,16 @@ public:
 		    const_cast<this_type*>(this)->at_index(iIndex));
 	}
 
-	static void set_link(Ty& ioObj, size_type iLink) {
+	static void set_link(Ty& ioObj, link iLink) {
 		if constexpr (has_backref_v<Backref>) {
 			Backref::template set_link(ioObj, iLink);
 		}
 	}
-	static size_type get_link(Ty const& ioObj) {
+	static link get_link(Ty const& ioObj) {
 		if constexpr (has_backref_v<Backref>) {
 			return Backref::template get_link(ioObj);
 		}
-		return size_type();
+		return link();
 	}
 
 	void clear() {
