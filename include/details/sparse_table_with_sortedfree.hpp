@@ -272,7 +272,7 @@ public:
 	}
 
 	inline void erase(link iIndex) {
-		size_type id = iIndex;
+		size_type id = iIndex.value();
 #ifdef CPPTABLES_DEBUG
 		index_t index(id);
 		id = index.index();
@@ -285,7 +285,7 @@ public:
 	}
 
 	inline Ty& at(link iIndex) {
-		size_type id = iIndex;
+		size_type id = iIndex.value();
 #ifdef CPPTABLES_DEBUG
 		index_t index(id);
 		id = index.index();

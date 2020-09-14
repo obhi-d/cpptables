@@ -88,7 +88,7 @@ public:
 	}
 	/**! Erase an object */
 	void erase(link iIndex) {
-		SizeType id = iIndex;
+		SizeType id = iIndex.value();
 #ifdef CPPTABLES_DEBUG
 		index_t index(id);
 		id = index.index();
@@ -96,7 +96,7 @@ public:
 		spoilers[id] = (spoilers[id] + 1) & 0x7f;
 #endif
 		if (has_backref_v<Backref>) {
-			SizeType end_l = get_link(items.back());
+			SizeType end_l = (SizeType)get_link(items.back());
 #ifdef CPPTABLES_DEBUG
 			index_t end_index(end_l);
 			end_l = end_index.index();
@@ -134,7 +134,7 @@ public:
 	}
 	/**! Locate an object using its link */
 	inline Ty& at(link iIndex) {
-		SizeType id = iIndex;
+		SizeType id = iIndex.value();
 #ifdef CPPTABLES_DEBUG
 		index_t index(id);
 		id = index.index();

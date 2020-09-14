@@ -27,7 +27,7 @@ template <typename Ty, typename SizeType> struct link {
 		offset = i.offset;
 		return *this;
 	}
-
+	inline SizeType value() const { return offset; }
 	inline explicit operator SizeType() const { return offset; }
 	inline explicit operator bool() const { return offset != k_null; }
 	inline auto operator <=> (link const& iSecond) const = default;
