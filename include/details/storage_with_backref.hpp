@@ -112,7 +112,8 @@ struct alignas(alignof(Ty)) storage_with_backref {
 	Ty const& get() const { return object(); }
 	Ty& get() { return object(); }
 
-	std::aligned_storage_t<sizeof(Ty), alignof(Ty)> storage;
+	// Note: Alignmen is handled by allocator
+	std::aligned_storage_t<sizeof(Ty)> storage;
 };
 } // namespace details
 } // namespace cpptables
