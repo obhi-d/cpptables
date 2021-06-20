@@ -1,8 +1,8 @@
 #pragma once
 #include "constants.hpp"
-#include <type_traits>
 #include <compare>
 #include <concepts>
+#include <type_traits>
 
 namespace cpptables {
 
@@ -12,11 +12,11 @@ template <typename Ty, typename SizeType> struct link {
 
 	link()              = default;
 	link(const link& i) = default;
-  explicit link(SizeType i) : offset(i) {}
+	explicit link(SizeType i) : offset(i) {}
 
 	template <typename Uy>
-  explicit link(const link<Uy, SizeType>& i,
-	     std::enable_if_t<std::is_convertible_v<Uy*, Ty*>>* = nullptr)
+	explicit link(const link<Uy, SizeType>& i,
+	              std::enable_if_t<std::is_convertible_v<Uy*, Ty*>>* = nullptr)
 	    : offset(i.offset) {}
 
 	link& operator=(const link& i) = default;
@@ -30,14 +30,14 @@ template <typename Ty, typename SizeType> struct link {
 	inline SizeType value() const { return offset; }
 	inline explicit operator SizeType() const { return offset; }
 	inline explicit operator bool() const { return offset != k_null; }
-	inline auto operator <=> (link const& iSecond) const = default;
+	inline auto operator<=>(link const& iSecond) const = default;
 
-  inline friend auto operator <=> (SizeType iFirst, link const& iSecond) {
+	inline friend auto operator<=>(SizeType iFirst, link const& iSecond) {
 		return iFirst <=> iSecond.offset;
 	}
-  inline friend auto operator <=> (link const& iSecond, SizeType iFirst) {
-    return iFirst <=> iSecond.offset;
-  }
+	inline friend auto operator<=>(link const& iSecond, SizeType iFirst) {
+		return iFirst <=> iSecond.offset;
+	}
 	SizeType offset = k_null;
 };
 
@@ -69,7 +69,7 @@ struct sortedfree {
 namespace details {
 
 template <typename... Options> constexpr unsigned options() {
-	return (Options::value | ...);
+	return (static_cast<unsigned>(Options::value) | ...);
 };
 
 } // namespace details
@@ -80,7 +80,8 @@ struct no_backref : std::false_type {
 	template <typename Ty, typename SizeType>
 	inline static void set_link(Ty& oObject, link<Ty, SizeType> iIdx) {}
 	template <typename Ty, typename SizeType>
-	[[maybe_unused]] inline static link<Ty, SizeType> get_link(Ty const& iObject) {
+	[[maybe_unused]] inline static link<Ty, SizeType> get_link(
+	    Ty const& iObject) {
 		return {};
 	}
 };
@@ -90,8 +91,10 @@ template <auto Member> struct with_backref : std::true_type {
 		*reinterpret_cast<SizeType*>(&(oObject.*Member)) = (SizeType)iIdx;
 	}
 	template <typename Ty, typename SizeType>
-	[[maybe_unused]] inline static link<Ty, SizeType> get_link(Ty const& iObject) {
-		return link<Ty, SizeType>(*reinterpret_cast<SizeType const*>(&(iObject.*Member)));
+	[[maybe_unused]] inline static link<Ty, SizeType> get_link(
+	    Ty const& iObject) {
+		return link<Ty, SizeType>(
+		    *reinterpret_cast<SizeType const*>(&(iObject.*Member)));
 	}
 };
 
